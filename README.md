@@ -1,2 +1,111 @@
-# Big Fish Arena
+# Big Fish Arena 🐟
 
+Juego de peces para móvil: come, crece y que no te coman.
+
+- **Jugar en el navegador:** https://a-quiles.github.io/BigFishArena/
+- **Política de privacidad:** https://a-quiles.github.io/BigFishArena/privacidad.html
+
+## Cómo está hecho
+
+| Carpeta | Qué hay |
+|---|---|
+| `game/big-fish-arena.html` | **El juego entero** (HTML + CSS + JS en un solo archivo). Es lo único que hay que tocar para cambiar el juego. |
+| `app/` | App Android (Java): muestra el juego en un WebView, pone los anuncios de AdMob y pide el consentimiento RGPD. |
+| `docs/` | Versión web jugable y política de privacidad. Si este repositorio es privado, la política se publica desde el repositorio público `a-quiles.github.io` (carpeta `BigFishArena/`), junto con `app-ads.txt`. |
+| `store/` | Icono, gráfico destacado, capturas y textos para la ficha de Google Play. |
+| `tools/build_assets.py` | Copia el juego a `app/` y `docs/`. |
+| `.github/workflows/android.yml` | Compila la app en la nube en cada cambio. |
+
+## Idiomas
+
+El juego está en 12 idiomas: español, inglés, portugués (Brasil), francés, alemán, italiano, ruso, turco, indonesio, japonés, coreano y chino simplificado.
+
+- La primera vez usa el idioma del móvil (si no está entre esos, inglés). Se cambia en **Ajustes → Idioma**.
+- Los textos se escriben en español en `game/big-fish-arena.html` y se traducen al mostrarse. Las traducciones están dentro del mismo archivo, en `const I18N`, con el texto español como clave.
+- Si añades o cambias un texto en español, hay que añadir su traducción en cada idioma (pídemelo y lo hago); mientras tanto ese texto sale en español.
+- Las fuentes incluyen letras latinas (también turco) y cirílicas; japonés, coreano y chino usan las fuentes del móvil.
+
+## Modos de juego
+
+- **Clásico:** un pez que come, crece y huye.
+- **Banco de peces** (se desbloquea al llegar a talla 6 en Clásico): manejas un banco de hasta 50 sardinas. Crece comiendo krill y peces pequeños o juntando sardinas sueltas. Los depredadores hacen pasadas contra el banco: el que ataca se marca en rojo con «!», acelera al final y los grandes se tragan varias sardinas de un bocado. «Atacar» hace que todas muerdan a la vez; «Bola» aprieta el banco 3 s y nadie os puede morder. El récord es el banco más grande.
+
+En los dos modos:
+
+- **Pescadores:** de vez en cuando llega un barco con la bandera de buceo: es el aviso de que hay buceadores cerca (si estás hondo y no se ve, sale la etiqueta «Buceadores cerca»). Se tiran al agua uno o dos buceadores con fusil de arpón, que solo apunta hacia delante (unos 20° arriba o abajo), así que se ponen a tu altura para disparar. Antes de disparar apuntan con una línea roja; se esquiva subiendo o bajando, y a mordiscos se les espanta de vuelta al barco. El barco se va cuando vuelven. En el modo banco solo aparecen cuando el banco tiene 10 sardinas o más.
+- **Mar sin bordes:** el mapa se repite en horizontal; si sales por un lado, entras por el otro.
+- **Control preciso:** el pez frena en cuanto sueltas el control, sin apenas deslizarse (salvo durante el mordisco, el acelerón o una embestida).
+- **Dificultad** (botón 🎚️ del menú, junto al récord): Fácil, Normal (el equilibrio original), Difícil o A tu medida, con 5 niveles para la agresividad de los depredadores, los peces gigantes, el daño, la velocidad y la frecuencia de pescadores. Las perlas se multiplican: Fácil ×0,5, Normal ×1, Difícil ×1,5 y, a tu medida, de ×0,25 a ×3 (cada ajuste suma según lo que complica la partida). Cada dificultad guarda su propio récord.
+
+## El mar
+
+- Cada especie vive en sus zonas y a su profundidad (como en la vida real): sardinas y peces voladores cerca de la superficie, pulpos, rayas, meros, anguilas y rapes pegados al fondo, pez linterna en las aguas oscuras… Al pasear, cada pez vuelve a su franja.
+- Cangrejos: caminan de lado por el fondo de todas las zonas. Los pequeños son presa; los grandes pellizcan.
+
+## Mares
+
+Se eligen en el menú con el botón del mar (debajo de «Jugar»). Cada uno tiene su agua, su luz, sus zonas, sus especies y su propio récord.
+
+- **Mar templado** (gratis): arrecifes, algas, lagunas y el abismo con lava.
+- **Antártida** (2000 perlas o 100 diamantes): pez de hielo, austromerluza, pingüinos y orcas. En la superficie flotan témpanos con iglús y pingüinos. Son icebergs de verdad, de tamaños muy distintos, con casi todo el hielo bajo el agua (quillas de hasta ~90 m que hay que rodear). Si tu pez cae encima de uno, se queda varado (y resbala por las pendientes) y tiene 5 s para saltar por el borde al agua o muere. Los osos polares vigilan desde los témpanos y se lanzan al agua a por los peces que nadan cerca de la superficie. Bajo el agua hay bloques de hielo que hacen de obstáculo.
+- **Mar tóxico** (2000 perlas o 100 diamantes): un mapa más pequeño y sucio. Si tu pez se traga una botella, una bolsa o una lata, encoge (y si ya es mínimo, pierde vida). Las tuberías del fondo vierten veneno y los bidones radiactivos que gotean queman poco a poco a quien se acerque (unos 20 s en el chorro y 30 s junto a un bidón para matarte). Antes de entrar, una alarma amarilla avisa: «Zona contaminada cerca». Aquí viven peces mutantes de tres ojos.
+- **Modo demo (desactivado):** `MAPS_FREE = true` abre todos los mares sin pagar y `PEARLS_FREE = true` da perlas ilimitadas. Ahora los dos están en `false` (juego normal). Una partida guardada que venga de la demo vuelve a 0 perlas y al mar templado la primera vez que se abre.
+
+## Menú
+
+- El menú principal solo tiene lo esencial: perlas, el engranaje de **Ajustes**, tu pez, el modo, **Jugar**, récord y dificultad, y Tienda, Mejoras, Misiones y Guía.
+- **Tu pez:** las flechas (o deslizar el dedo) cambian entre tus especies sin salir del menú. Al tocarlo se abre «Tu pez», donde eliges especie y aspecto y desbloqueas especies nuevas (sustituye al antiguo Acuario).
+- **Ajustes (⚙️):** sonido, música, vibración, calidad gráfica, «Cómo se juega» y, en la app, la privacidad y los anuncios.
+
+## Gráficos
+
+- Los peces se «hornean» una vez en sprites con volumen (degradado, brillo, luz de contorno, silueta gruesa, aletas translúcidas y escamas) y se dibujan en tiras que siguen la onda del nado. Los ojos se dibujan en vivo: miran a la presa o al peligro, parpadean y cambian con el estado (tranquilo, cazando, asustado, comiendo, aturdido, herido).
+- Animaciones de mordisco, trago, acelerón, golpe, subir de talla y muerte, con parada de impacto, temblor de cámara según el daño y vibración (se puede apagar en Ajustes).
+- Al cambiar de sentido, los peces (y las gaviotas y los buceadores) no se voltean de golpe: giran en unas décimas de segundo, con un coletazo; los grandes, algo más despacio.
+- El fondo va por capas (lejos, medio, juego y primer plano) con color, luz y niebla propios de cada zona.
+- Calidad gráfica en Ajustes: Auto, Alta, Media o Baja. En Auto el juego mide los primeros segundos de cada partida y baja la calidad si el móvil no llega a unos 46 fps.
+
+## Música
+
+Cada zona tiene su propia música de fondo, generada en el propio juego con Web Audio (sin archivos ni derechos de autor). Se activa o desactiva en Ajustes.
+
+## Anuncios
+
+- Un anuncio intersticial **cada 5 partidas**, al salir de la pantalla de resultados. Nunca durante la partida.
+- **Cofre dorado gratis** viendo un anuncio con recompensa (voluntario), uno al día.
+- **Diamante gratis** viendo un anuncio con recompensa: 1 💎 por anuncio, hasta 5 al día (Tienda → Diamantes).
+- Los IDs de AdMob están en `gradle.properties`. Ahora son los **IDs de prueba** de Google: cámbialos por los tuyos antes de publicar.
+- El consentimiento (RGPD) lo gestiona el SDK de Google (UMP) con el mensaje que configures en AdMob → Privacidad y mensajes.
+- En el navegador no hay anuncios.
+
+## Diamantes
+
+`const DIAMONDS = true;` en `game/big-fish-arena.html` (con `false` se oculta todo lo de diamantes).
+
+**Cómo se consiguen**
+| Fuente | Cantidad |
+|---|---|
+| Anuncio con recompensa (Tienda) | 1 💎, hasta 5 al día |
+| Misión difícil | 5 💎 cada vez (al cumplirla sale otra) |
+| Cofre dorado (400 perlas) | 4 % de probabilidad de 3 💎 |
+| Cofres hundidos | 1 % de probabilidad de 1 💎 |
+| Escondido en lo más hondo del mar | 1 💎 (aparece en ~12 % de las partidas) |
+
+**En qué se gastan**
+- Aspectos exclusivos, cada uno para un pez: Hielo 40 · Koi y Tigre 50 · Tesoro real y Fantasma 60 · Lava 80 · Eléctrico 90 · Dragón 100 · Robot 110 · Holográfico 120 · Tóxico y Galaxia 150. Cada uno tiene su propio dibujo (cristales, nebulosas, grietas de magma, escamas de oro, rayas de tigre, rayos, placas de metal, escamas iridiscentes…), brillo y rastro de partículas.
+- Mares: Antártida y Mar tóxico por 100 💎 (o 2000 perlas).
+
+**Sin compras con dinero real**
+- `const PAID_GEMS = false;` en `game/big-fish-arena.html`: no se venden diamantes; solo se ganan jugando y con anuncios.
+- La versión con pagos de Google Play (packs de 0,99 € a 19,99 € y el código de facturación en `MainActivity.java`) está en el historial de git, en el commit «Economía real: diamantes con Google Play Billing…». Para recuperarla: `PAID_GEMS = true`, volver a poner ese `MainActivity.java` y la dependencia `com.android.billingclient:billing:8.0.0`, y crear los productos `diamantes_50`, `diamantes_280`, `diamantes_600` y `diamantes_1300` en Play Console.
+
+## Compilar
+
+Cada `push` a `main` compila en GitHub Actions y deja en **Actions → la última ejecución → Artifacts**:
+- `app-release.aab` → para subir a Google Play
+- `app-release.apk` → para instalar a mano en tu móvil y probar
+
+La firma usa estos secretos del repositorio (Settings → Secrets and variables → Actions):
+`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
+
+En local (con Android Studio o Gradle 9.4 y JDK 21): `python3 tools/build_assets.py` y luego `gradle :app:assembleRelease`.

@@ -1,0 +1,57 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Número de versión interno: en GitHub Actions es el número de compilación;
+// en tu ordenador es APP_VERSION_CODE de gradle.properties (súbelo en 1 antes de cada versión nueva)
+def runNumber = System.getenv('GITHUB_RUN_NUMBER') ?: project.property('APP_VERSION_CODE')
+def keystoreFile = System.getenv('KEYSTORE_FILE')
+
+android {
+    namespace = 'com.aquiles.bigfisharena'
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = 'com.aquiles.bigfisharena'
+        minSdk = 24
+        targetSdk = 36
+        versionCode = Integer.parseInt(runNumber)
+        versionName = "${project.property('APP_VERSION_NAME')}.${runNumber}"
+        manifestPlaceholders = [
+            admobAppId          : project.property('ADMOB_APP_ID'),
+            admobInterstitialId : project.property('ADMOB_INTERSTITIAL_ID'),
+            admobRewardedId     : project.property('ADMOB_REWARDED_ID'),
+        ]
+    }
+
+    signingConfigs {
+        release {
+            if (keystoreFile) {
+                storeFile = file(keystoreFile)
+                storePassword = System.getenv('KEYSTORE_PASSWORD')
+                keyAlias = System.getenv('KEY_ALIAS')
+                keyPassword = System.getenv('KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = false
+            if (keystoreFile) signingConfig = signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.android.gms:play-services-ads:25.5.0'
+    implementation 'com.google.android.ump:user-messaging-platform:4.0.0'
+    implementation 'androidx.webkit:webkit:1.12.1'
+    implementation 'androidx.activity:activity:1.9.3'
+    implementation 'androidx.core:core:1.13.1'
+}
