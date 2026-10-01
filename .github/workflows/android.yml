@@ -40,7 +40,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew --no-daemon :app:bundleRelease :app:assembleRelease
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: big-fish-arena-${{ github.run_number }}
           path: |
