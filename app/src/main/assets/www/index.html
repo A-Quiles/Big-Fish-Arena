@@ -5914,14 +5914,19 @@ function drawHUD(sc) {
   }
   if (!sch && P.strand > 0) { ctx.textAlign = 'center'; otext('¡Vuelve al agua! ' + P.strand.toFixed(1).replace('.', ',') + ' s', sw / 2, sh * 0.66, 28, P.strand < 1.2 ? '#ff5d6c' : '#ffe27a', 700); }
   drawFisherMarks(sc);
+  const bannerY = Math.max(sh * 0.3, y0 + 110);                 // cartel del mar o de la zona
   if (g.banner) {
     const bt = g.banner.t, al = clamp(Math.min(bt * 4, (2.4 - bt) * 2), 0, 1);
     ctx.globalAlpha = al; ctx.textAlign = 'center';
-    otext(g.banner.txt, sw / 2, Math.max(sh * 0.3, y0 + 110), 34, '#eafffb', 700);
+    otext(g.banner.txt, sw / 2, bannerY, 34, '#eafffb', 700);
     ctx.globalAlpha = 1;
   }
-  if (P.inv > 0.5 && g.t < 3) { ctx.textAlign = 'center'; otext('¡A comer!', sw / 2, sh * 0.3, 30, '#ffe27a', 700); }
-  if (g.toasts.length) { if (sw < 600) drawToast(g.toasts[0], insets.t + 126, false); else drawToast(g.toasts[0], hud.pause.y + hud.pause.r + 70, true); }
+  if (P.inv > 0.5 && g.t < 3) {                                   // debajo del cartel, sin taparlo
+    ctx.globalAlpha = clamp((3 - g.t) * 2, 0, 1); ctx.textAlign = 'center';
+    otext('¡A comer!', sw / 2, bannerY + 46, 30, '#ffe27a', 700);
+    ctx.globalAlpha = 1;
+  }
+  if (g.toasts.length) { if (sw < 600) drawToast(g.toasts[0], insets.t + 126, false); else drawToast(g.toasts[0], (g.banner || (P.inv > 0.5 && g.t < 3)) ? Math.max(hud.pause.y + hud.pause.r + 70, bannerY + 72) : hud.pause.y + hud.pause.r + 70, true); }
 }
 
 // ----- Barco de buceo: casco a dos colores, cabina, botellas en cubierta y bandera de buceo -----
