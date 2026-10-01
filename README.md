@@ -64,6 +64,17 @@ Se eligen en el menú con el botón del mar (debajo de «Jugar»). Cada uno tien
 - Al cambiar de sentido, los peces (y las gaviotas y los buceadores) no se voltean de golpe: giran en unas décimas de segundo, con un coletazo; los grandes, algo más despacio.
 - El fondo va por capas (lejos, medio, juego y primer plano) con color, luz y niebla propios de cada zona.
 - Calidad gráfica en Ajustes: Auto, Alta, Media o Baja. En Auto el juego mide los primeros segundos de cada partida y baja la calidad si el móvil no llega a unos 46 fps.
+- Resolución dinámica: en cualquier calidad, si los fotogramas van lentos el lienzo baja un poco de resolución (como mucho hasta el 72–80 %) y la recupera cuando va holgado. Así no se notan tirones.
+- El fondo lejano (agua, relieve del fondo, cielo, rayos de luz y nieve marina) se pinta a menos resolución y se escala: es lo que más píxeles movía.
+- En pausa y en la pantalla de resultados el mar se pinta una sola vez.
+
+## Botones y mapa
+
+En **Ajustes → Botones y mapa** se arrastran el botón de morder (o Atacar en el banco), el de la habilidad (o Bola) y el minimapa, y se cambia su tamaño: los botones entre el 70 % y el 140 % y el minimapa entre el 70 % y el 160 %. Se guarda aparte para el móvil en vertical y en horizontal, y «Restablecer» vuelve a la posición de siempre. El botón de morder funciona aunque se ponga en la mitad izquierda de la pantalla.
+
+## Final de la partida
+
+Las perlas de la partida se guardan en un cofre con una animación: una fila por cada origen (por tus puntos, con imán o dificultad si los hay; cofres hundidos; misiones) que cuenta hacia arriba mientras las perlas vuelan al cofre y sube tu total. Tocar el cuadro lo termina al momento.
 
 ## Música
 
