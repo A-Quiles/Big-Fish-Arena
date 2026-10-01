@@ -40,7 +40,9 @@ En los dos modos:
 ## El mar
 
 - Cada especie vive en sus zonas y a su profundidad (como en la vida real): sardinas y peces voladores cerca de la superficie, pulpos, rayas, meros, anguilas y rapes pegados al fondo, pez linterna en las aguas oscuras… Al pasear, cada pez vuelve a su franja.
-- Cangrejos: caminan de lado por el fondo de todas las zonas. Los pequeños son presa; los grandes pellizcan.
+- Cangrejos: caminan de lado por el fondo de las zonas poco profundas (arrecife, bosque de algas, laguna y algo en mar abierto). Los pequeños son presa; los grandes pellizcan.
+- Cangrejo araña (como el cangrejo gigante japonés): más grande y con patas larguísimas; vive en el fondo del abismo y de la fosa abisal.
+- Nunca hay más de 2 cangrejos de cada tipo a la vez cerca del jugador (antes salían muchos más).
 
 ## Mares
 
