@@ -991,7 +991,7 @@ const hash = (i) => { const v = Math.sin(i * 127.1) * 43758.5453; return v - Mat
 function angDiff(a, b) { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; }
 
 const cv = $('game');
-let ctx = cv.getContext('2d');
+let ctx = cv.getContext('2d', { alpha: false }) || cv.getContext('2d');
 const FONT = '"Fredoka","Nunito",system-ui,sans-serif';
 const UIFONT = '"Nunito",system-ui,sans-serif';
 const OUT = '#0b2233';
@@ -1144,14 +1144,14 @@ function genMapExtras(R, rr) {
       if (Math.abs(sl) > 0.6) continue;
       WORLD.pipes.push({ x, ang: -Math.PI / 2 + rr(-0.45, 0.45), len: rr(360, 540), ph: R() * 6 });
     }
-    for (const d of WORLD.deco) if (d.k === 'barrel' && d.h < 0.5) WORLD.haz.push({ x: d.x, r: 120 + d.s * 40, dps: 0.03 });
+    for (let _i1 = 0, _a1 = WORLD.deco, d; _i1 < _a1.length && ((d = _a1[_i1]), true); _i1++) if (d.k === 'barrel' && d.h < 0.5) WORLD.haz.push({ x: d.x, r: 120 + d.s * 40, dps: 0.03 });
   }
 }
 const ICE_T = 5;                                          // segundos que aguantas varado encima del hielo
 
 // ---------- Antártida: témpanos, iglús, bloques de hielo y osos ----------
 function floeUnder(x, pad) {
-  for (const fl of WORLD.floes) { const fx = nearX(fl.x, x); if (Math.abs(x - fx) < fl.w / 2 + (pad || 0)) return fl; }
+  for (let _i2 = 0, _a2 = WORLD.floes, fl; _i2 < _a2.length && ((fl = _a2[_i2]), true); _i2++) { const fx = nearX(fl.x, x); if (Math.abs(x - fx) < fl.w / 2 + (pad || 0)) return fl; }
   return null;
 }
 function floeProf(fl, arr, x, fx) {                        // perfil (0-1) en la x dada
@@ -1213,7 +1213,7 @@ function mapCollide(f) {
       }
     }
   }
-  for (const c of WORLD.ice) {                            // bloques de hielo: obstáculos
+  for (let _i3 = 0, _a3 = WORLD.ice, c; _i3 < _a3.length && ((c = _a3[_i3]), true); _i3++) {                            // bloques de hielo: obstáculos
     const cx = nearX(c.x, f.x), R = c.r * 0.88 + f.r * 0.55;
     const dx = f.x - cx; if (dx > R || dx < -R) continue;
     const cy = c.y + Math.sin(g.t * 0.5 + c.ph) * 6, dy = f.y - cy; if (dy > R || dy < -R) continue;
@@ -1228,7 +1228,7 @@ function mapCollide(f) {
 function spawnBear() {
   const g = game, P = g.P, vr = viewRadius();
   let best = null, bd = Infinity;
-  for (const fl of WORLD.floes) {
+  for (let _i4 = 0, _a4 = WORLD.floes, fl; _i4 < _a4.length && ((fl = _a4[_i4]), true); _i4++) {
     if (!fl.bear || fl.busy) continue;
     const fx = nearX(fl.x, P.x), dx = Math.abs(fx - P.x);
     if (dx < vr * 0.9 || dx > vr * 2) continue;
@@ -1245,7 +1245,7 @@ function bearTarget(b) {
   let best = null, bd = Infinity;
   const test = (T, w) => { const dx = Math.abs(T.x - b.x); if (dx > 440) return; const dd = (dx * dx + T.y * T.y) * w; if (dd < bd) { bd = dd; best = T; } };
   if (!P.dead && !P.air && P.hidden <= 0 && P.inv <= 0 && P.y < 280 + P.r && P.r <= b.r * 1.4) test(P, 0.6);
-  for (const f of g.fish) if (!f.isP && !f.dead && !f.air && f.y < 240 && f.r <= b.r * 0.9 && f.r >= b.r * 0.2) test(f, 1);
+  for (let _i5 = 0, _a5 = g.fish, f; _i5 < _a5.length && ((f = _a5[_i5]), true); _i5++) if (!f.isP && !f.dead && !f.air && f.y < 240 && f.r <= b.r * 0.9 && f.r >= b.r * 0.2) test(f, 1);
   return best;
 }
 function updBear(b, dt) {
@@ -1315,13 +1315,13 @@ function pipePt(p, u, t) {                               // punto del chorro de 
 function toxicAt(x, y, r, m) {                           // cuánto veneno hay aquí (0 = nada); m = margen extra (para avisar)
   const g = game;
   let v = 0;
-  for (const p of WORLD.pipes) {
+  for (let _i6 = 0, _a6 = WORLD.pipes, p; _i6 < _a6.length && ((p = _a6[_i6]), true); _i6++) {
     const px = nearX(p.x, x);
     if (Math.abs(px - x) > p.len + 200) continue;
     const q = Object.assign({}, p, { x: px });
     for (let i = 1; i <= 6; i++) { const s = pipePt(q, i / 6, g.t), R = s.w + r * 0.5 + (m || 0); if (d2(x, y, s.x, s.y) < R * R) { v = Math.max(v, 0.055); break; } }
   }
-  for (const hz of WORLD.haz) {
+  for (let _i7 = 0, _a7 = WORLD.haz, hz; _i7 < _a7.length && ((hz = _a7[_i7]), true); _i7++) {
     const hx = nearX(hz.x, x), fy = floorY(hx) - 20, R = hz.r + r * 0.5 + (m || 0);
     if (d2(x, y, hx, fy) < R * R) v = Math.max(v, hz.dps);
   }
@@ -1331,13 +1331,13 @@ function updMap(dt) {
   const g = game, P = g.P;
   if (MAPK !== 'toxico' || g.demo) return;
   // basura: cae despacio; si tu pez se la traga, encoge
-  for (const k of g.trash) {
+  for (let _i8 = 0, _a8 = g.trash, k; _i8 < _a8.length && ((k = _a8[_i8]), true); _i8++) {
     k.ph += dt; k.rot += k.vr * dt;
     k.x += (k.vx + Math.sin(k.ph * 0.8) * 8) * dt; k.y += k.vy * dt;
     if (k.y > floorY(k.x) - 10) { k.y = floorY(k.x) - 10; k.vy = 0; k.vx = 0; k.vr = 0; }
     if (P.dead || g.over) continue;
     if (g.mode === 'school') {
-      for (const m of g.fish) {
+      for (let _i9 = 0, _a9 = g.fish, m; _i9 < _a9.length && ((m = _a9[_i9]), true); _i9++) {
         if (!m.member || m.dead || Math.abs(m.x - k.x) > 20 || Math.abs(m.y - k.y) > 20) continue;
         k.dead = true; m.dead = true; bubbles(m.x, m.y, 5, 4); addGhost(m, 'belly'); memberLost(m, null, 'plastic');
         floatText(m.x, m.y - 20, '¡Plástico!', '#ffe27a', 0.9); break;
@@ -1365,7 +1365,7 @@ function updMap(dt) {
   }
   // veneno de las tuberías y radiación de los bidones
   g.toxT = Math.max(0, (g.toxT || 0) - dt);
-  for (const f of g.fish) {
+  for (let _i10 = 0, _a10 = g.fish, f; _i10 < _a10.length && ((f = _a10[_i10]), true); _i10++) {
     if (f.dead || (f.isP && g.mode === 'school')) continue;
     if (!f.isP && !f.member && Math.random() > 0.35) continue;       // los demás, de vez en cuando (ahorra cálculo)
     const v = toxicAt(f.x, f.y, f.r);
@@ -1390,7 +1390,7 @@ function mapSpawns() {
 // ---------- Dibujo de los mares nuevos ----------
 function drawIce(x0, x1, y0, y1, t, sc) {
   if (MAPK !== 'antartida') return;
-  for (const c of WORLD.ice) {
+  for (let _i11 = 0, _a11 = WORLD.ice, c; _i11 < _a11.length && ((c = _a11[_i11]), true); _i11++) {
     const cx = nearX(c.x, (x0 + x1) / 2), cy = c.y + Math.sin(t * 0.5 + c.ph) * 6;
     const R = c.r * 1.3;
     if (cx + R < x0 - 20 || cx - R > x1 + 20 || cy + R < y0 - 20 || cy - R > y1 + 20) continue;
@@ -1430,7 +1430,7 @@ function drawPenguinFig(x, y, s, t, k) {                  // pingüino de pie (a
 }
 function drawFloes(x0, x1, y0, y1, t, sc) {
   if (MAPK !== 'antartida' || y0 > (WORLD.iceDeep || 0)) return;
-  for (const fl of WORLD.floes) {
+  for (let _i12 = 0, _a12 = WORLD.floes, fl; _i12 < _a12.length && ((fl = _a12[_i12]), true); _i12++) {
     const fx = nearX(fl.x, (x0 + x1) / 2);
     if (fx + fl.w / 2 < x0 - 40 || fx - fl.w / 2 > x1 + 40) continue;
     const N = fl.top.length - 1, L = fx - fl.w / 2, bob = floeBob(fl, t);
@@ -1523,7 +1523,7 @@ function drawBear(b, t, ol, sc) {
 }
 function drawPipes(x0, x1, y0, y1, t, sc, plume) {
   if (MAPK !== 'toxico') return;
-  for (const p of WORLD.pipes) {
+  for (let _i13 = 0, _a13 = WORLD.pipes, p; _i13 < _a13.length && ((p = _a13[_i13]), true); _i13++) {
     const px = nearX(p.x, (x0 + x1) / 2);
     if (px + p.len + 150 < x0 || px - p.len - 150 > x1) continue;
     const q = Object.assign({}, p, { x: px }), fy = floorY(px);
@@ -1559,7 +1559,7 @@ function drawTrash(x0, x1, y0, y1, sc) {
   const g = game;
   if (MAPK !== 'toxico' || !g.trash) return;
   ctx.lineJoin = 'round';
-  for (const k of g.trash) {
+  for (let _i14 = 0, _a14 = g.trash, k; _i14 < _a14.length && ((k = _a14[_i14]), true); _i14++) {
     if (k.x < x0 - 30 || k.x > x1 + 30 || k.y < y0 - 30 || k.y > y1 + 30) continue;
     ctx.save(); ctx.translate(k.x, k.y); ctx.rotate(k.rot); ctx.strokeStyle = OUT; ctx.lineWidth = 1.6;
     if (k.kind === 'bottle') {
@@ -1702,7 +1702,7 @@ function genWorld(seed) {
   segs[segs.length - 1].x1 = W;
   const DEP = { reef: [1100, 1400], kelp: [1900, 2300], lagoon: [1200, 1700], open: [2900, 3700], trench: [5300, 6900] };
   const pts = [];
-  for (const s of segs) {
+  for (let _i15 = 0, _a15 = segs, s; _i15 < _a15.length && ((s = _a15[_i15]), true); _i15++) {
     const [a, b] = DEP[s.t], w = s.x1 - s.x0, edge = Math.min(800, w * 0.18);
     const xa = s.x0 + edge, xb = s.x1 - edge;
     for (let px = xa; px <= xb + 1; px += rr(350, 800)) {
@@ -1724,9 +1724,9 @@ function genWorld(seed) {
     fs[i] = p[1] + (q[1] - p[1]) * t * t * (3 - 2 * t);
   }
   const bio = new Int8Array(Math.ceil(W / 100) + 2);
-  for (const s of segs) for (let i = Math.floor(s.x0 / 100); i <= Math.min(bio.length - 1, Math.ceil(s.x1 / 100)); i++) bio[i] = BIO[s.t];
+  for (let _i16 = 0, _a16 = segs, s; _i16 < _a16.length && ((s = _a16[_i16]), true); _i16++) for (let i = Math.floor(s.x0 / 100); i <= Math.min(bio.length - 1, Math.ceil(s.x1 / 100)); i++) bio[i] = BIO[s.t];
   const wrecks = [];
-  for (const s of segs) if ((s.t === 'open' || s.t === 'trench') && wrecks.length < 2 && R() < 0.6) wrecks.push(rr(s.x0 + 600, s.x1 - 600));
+  for (let _i17 = 0, _a17 = segs, s; _i17 < _a17.length && ((s = _a17[_i17]), true); _i17++) if ((s.t === 'open' || s.t === 'trench') && wrecks.length < 2 && R() < 0.6) wrecks.push(rr(s.x0 + 600, s.x1 - 600));
   WORLD = { seed, W, segs, fs, bio, wrecks, deco: [] };
   WORLD_W = W;
   for (let dx = 60; dx < W; dx += rr(60, 200)) {
@@ -2136,21 +2136,29 @@ const GFXL = [
 const GFX_OPTS = ['auto', 'alta', 'media', 'baja'];
 function gfxLevel() { const i = GFX_OPTS.indexOf(save.gfx); return i > 0 ? i - 1 : clamp(save.gfxAuto | 0, 0, 2); }
 let GFX = GFXL[gfxLevel()];
-function gfxApply() { const G = GFXL[gfxLevel()]; if (G !== GFX) { GFX = G; DRS.k = 1; sprClear(); resize(); } }
+function gfxApply() { const G = GFXL[gfxLevel()]; if (G !== GFX) { GFX = G; DRS.k = 1; DRS.want = 1; sprClear(); resize(); } }
+// durante la partida, el cambio de calidad espera al principio del siguiente fotograma (si no, ese sale en blanco)
+function gfxApplyLater() { DRS.gfx = true; }
 // Resolución dinámica: mide el tiempo entre fotogramas mientras se juega. Si va lento, baja la resolución del lienzo
 // un 8 % (hasta GFX.dmin); si va holgado varios segundos seguidos, la vuelve a subir. Así no se notan tirones.
-const DRS = { k: 1, n: 0, sum: 0, best: 1, ok: 0, at: 0 };
+const DRS = { k: 1, want: 1, gfx: false, n: 0, sum: 0, best: 1, ok: 0, at: 0 };
 function drsTick(raw) {
-  if (DRS.lock || !(raw > 0) || raw > 0.25) return;
+  if (DRS.lock || !(raw > 0) || raw > 0.25 || !game || game.t < 2) return;
   DRS.n++; DRS.sum += raw; DRS.best = Math.min(DRS.best, raw);
   if (DRS.n < 45) return;
   const avg = DRS.sum / DRS.n, base = Math.max(1 / 125, Math.min(1 / 60, DRS.best * 1.05));   // 60, 90 o 120 Hz
   DRS.n = 0; DRS.sum = 0; DRS.best = 1;
   let k = DRS.k;
-  if (avg > base * 1.3) { k = Math.max(GFX.dmin, k - 0.08); DRS.ok = 0; }
-  else if (avg < base * 1.08) { if (++DRS.ok >= 4) { k = Math.min(1, k + 0.05); DRS.ok = 0; } }
+  const now = performance.now();
+  if (avg > base * 1.3) { if (k > GFX.dmin) { DRS.cap = k; DRS.capT = now + 20000; } k = Math.max(GFX.dmin, k - 0.08); DRS.ok = 0; }
+  else if (avg < base * 1.08) { if (++DRS.ok >= 4) { k = Math.min(now < (DRS.capT || 0) ? Math.max(k, DRS.cap - 0.04) : 1, k + 0.05); DRS.ok = 0; } }
   else DRS.ok = 0;
-  if (Math.abs(k - DRS.k) > 0.001) { DRS.k = k; resize(); }
+  if (Math.abs(k - DRS.want) > 0.001) DRS.want = k;   // se aplica al empezar el siguiente fotograma
+}
+function drsApply() {
+  if (DRS.resz) { DRS.resz = false; resize(); }
+  if (DRS.gfx) { DRS.gfx = false; gfxApply(); return; }
+  if (Math.abs(DRS.want - DRS.k) > 0.001) { DRS.k = DRS.want; resizeCanvas(); }
 }
 // Medición en «Auto»: de los 2 a los 12 s de partida. Si va a menos de ~46 fps, baja un nivel (o dos si va muy mal);
 // si va sobrado, prueba a subir uno en la siguiente partida.
@@ -2165,7 +2173,7 @@ function gfxMeasure(dt, work) {
   let nq = q;
   if (avg > 0.0215) nq = Math.min(2, q + (avg > 0.03 ? 2 : 1));
   else if (avg < 0.0175 && wk < 6 && q > 0) nq = q - 1;
-  if (nq !== q) { save.gfxAuto = nq; persist(); if (nq > q) gfxApply(); }
+  if (nq !== q) { save.gfxAuto = nq; persist(); if (nq > q) gfxApplyLater(); }
 }
 // Parada de impacto (congela el juego unas centésimas) y empujón de cámara
 function hitStop(sec) { const g = game; if (!g || g.demo || (g.hsCD || 0) > 0) return; g.hs = Math.max(g.hs || 0, sec); g.hsCD = 0.2; }
@@ -2207,16 +2215,20 @@ function readInsets() {
     insets.b = parseFloat(cs.paddingBottom) || 0; insets.l = parseFloat(cs.paddingLeft) || 0;
   } catch (e) {}
 }
-function resize() {
+function resizeCanvas() {                               // solo el tamaño del lienzo (la resolución dinámica)
   const sw = Math.max(1, window.innerWidth || 1), sh = Math.max(1, window.innerHeight || 1);
   const dpr = Math.max(0.75, Math.min(window.devicePixelRatio || 1, GFX.dpr) * DRS.k);
-  cv.width = Math.round(sw * dpr); cv.height = Math.round(sh * dpr);
+  const W = Math.round(sw * dpr), H = Math.round(sh * dpr);
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
   view.sw = sw; view.sh = sh; view.dpr = dpr; REND.still = false;
+}
+function resize() {
+  resizeCanvas();
   readInsets();
   hudLayout();
 }
-window.addEventListener('resize', resize);
-window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+window.addEventListener('resize', () => { DRS.resz = true; });
+window.addEventListener('orientationchange', () => setTimeout(() => { DRS.resz = true; }, 200));
 const viewFor = (r) => 330 * Math.pow(r / R0, 0.62);
 
 // ================= Audio =================
@@ -2447,7 +2459,11 @@ function makeFish(sp, r, x, y, isP) {
     chaseT: 0, restT: 0, angryT: 0, hungry: Math.random() < s.aggr * DF.aggr, hungryT: rand(3, 7), wa: 0, wanderT: 0,
     spawnR: r, dead: false,
   };
-  for (const k of TIMERS) f[k] = 0;
+  for (let _i18 = 0, _a18 = TIMERS, k; _i18 < _a18.length && ((k = _a18[_i18]), true); _i18++) f[k] = 0;
+  // el resto de propiedades que se usan más tarde, ya desde el principio y siempre en el mismo orden
+  f.biteAt = -9; f.dashAt = -9; f.eatAt = -9; f.lvlAt = -9; f._fs = 0; f._ft = -99; f._fx = 0; f._bq = 0;
+  f._sE = null; f._sK = ''; f._sM = 0; f._sX = ''; f._sL = 0;
+  f.member = false; f.ox = 0; f.oy = 0; f.ph = 0; f.wdir = 0; f.strand = 0; f.strandFl = null; f.hop = 0; f.fxT = 0;
   f.hpMax = hpMaxOf(f); f.hp = f.hpMax; f.wa = f.ang;
   return f;
 }
@@ -2483,7 +2499,7 @@ function viewRadius() {
 const canSwallowP = (f, P) => f.r >= SWALLOW * P.r * 0.98;
 function killerCount() {
   const g = game, P = g.P; let n = 0;
-  for (const f of g.fish) if (!f.isP && !f.dead && canSwallowP(f, P)) n++;
+  for (let _i19 = 0, _a19 = g.fish, f; _i19 < _a19.length && ((f = _a19[_i19]), true); _i19++) if (!f.isP && !f.dead && canSwallowP(f, P)) n++;
   return n;
 }
 function killerCap() {
@@ -2499,7 +2515,7 @@ function spawnFish(initial) {
   const zP = zoneOf(P.x, P.y);
   const crowd = 260 * g.cam.view / 330;
   const walkers = { cangrejo: 0, arana: 0 };
-  for (const o of g.fish) if (!o.dead && walkers[o.sp] !== undefined) walkers[o.sp]++;
+  for (let _i20 = 0, _a20 = g.fish, o; _i20 < _a20.length && ((o = _a20[_i20]), true); _i20++) if (!o.dead && walkers[o.sp] !== undefined) walkers[o.sp]++;
   for (let tries = 0; tries < 12; tries++) {
     const a = rand(0, TAU), u = Math.random();
     const pG = killers < cap ? PGIANT[zP] * DF.giants : 0, pB = PBIG[zP] * (0.6 + 0.4 * DF.giants);
@@ -2527,7 +2543,7 @@ function spawnFish(initial) {
       if (Math.abs(x - P.x) < H.w + r * 2 && Math.abs(y - P.y) < H.h + r * 2) continue;
     } else if (y > fl - r - 50) continue;
     let near = 0;
-    for (const o of g.fish) if (!o.dead && d2(o.x, o.y, x, y) < crowd * crowd) near++;
+    for (let _i21 = 0, _a21 = g.fish, o; _i21 < _a21.length && ((o = _a21[_i21]), true); _i21++) if (!o.dead && d2(o.x, o.y, x, y) < crowd * crowd) near++;
     if (near >= 3) continue;
     const f = makeFish(sp, r, x, y, false);
     g.fish.push(f);
@@ -2662,8 +2678,10 @@ function newGame(sp, demo, boosts, gmode) {
 }
 
 // ---------- Efectos ----------
+const PARTS_MAX = 320;
 function puff(x, y, col, n, spd, size) {
   const p = game.parts;
+  if (p.length > PARTS_MAX) n = Math.min(n, 1);
   for (let i = 0; i < n; i++) {
     const a = rand(0, TAU), s = rand(spd * 0.3, spd);
     p.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rand(0.35, 0.7), max: 0.7, col, r: rand(0.6, 1.2) * size, g: 0, drag: 2.5 });
@@ -2671,6 +2689,7 @@ function puff(x, y, col, n, spd, size) {
 }
 function bubbles(x, y, n, size) {
   const p = game.parts;
+  if (p.length > PARTS_MAX) n = Math.min(n, 1);
   for (let i = 0; i < n; i++) p.push({ x: x + rand(-size, size), y: y + rand(-size, size), vx: rand(-20, 20), vy: rand(-90, -40) * (size / 8 + 0.5), life: rand(0.6, 1.1), max: 1.1, col: 'bub', r: rand(0.25, 0.55) * size, g: -30, drag: 1 });
 }
 function splashFx(x, strength, size) {
@@ -2716,9 +2735,9 @@ function playerBite() {
     const sc = dd * (1 + da);
     if (sc < bd) { bd = sc; best = T; }
   };
-  for (const T of g.fish) if (T !== P && !T.dead) consider(T);
-  for (const b of g.birds) if (!b.dead) consider(b);
-  for (const e of g.events) if (e.diver && e.st !== 'flee' && e.st !== 'leave' && e.st !== 'jump') consider(e);
+  for (let _i22 = 0, _a22 = g.fish, T; _i22 < _a22.length && ((T = _a22[_i22]), true); _i22++) if (T !== P && !T.dead) consider(T);
+  for (let _i23 = 0, _a23 = g.birds, b; _i23 < _a23.length && ((b = _a23[_i23]), true); _i23++) if (!b.dead) consider(b);
+  for (let _i24 = 0, _a24 = g.events, e; _i24 < _a24.length && ((e = _a24[_i24]), true); _i24++) if (e.diver && e.st !== 'flee' && e.st !== 'leave' && e.st !== 'jump') consider(e);
   if (best) P.ang = Math.atan2(best.y - P.y, best.x - P.x);
   bite(P);
 }
@@ -2727,16 +2746,16 @@ function biteCheck(f) {
   const g = game;
   if (f.isP) {
     let best = null, bd = Infinity;
-    for (const T of g.fish) {
+    for (let _i25 = 0, _a25 = g.fish, T; _i25 < _a25.length && ((T = _a25[_i25]), true); _i25++) {
       if (T === f || T.dead) continue;
       if (reachOK(f, T, 0)) { const dd = d2(f.x, f.y, T.x, T.y); if (dd < bd) { bd = dd; best = T; } }
     }
-    for (const b of g.birds) {
+    for (let _i26 = 0, _a26 = g.birds, b; _i26 < _a26.length && ((b = _a26[_i26]), true); _i26++) {
       if (b.dead) continue;
       if (reachOK(f, b, 0.1)) { const dd = d2(f.x, f.y, b.x, b.y); if (dd < bd) { bd = dd; best = b; } }
     }
     if (best) { if (best.bird) biteBird(f, best); else resolveBite(f, best, 1, 0); return; }
-    for (const e of g.events) if (e.diver && reachOK(f, e, 0.2)) { f.bitHit = true; biteDiver(e, f); return; }
+    for (let _i27 = 0, _a27 = g.events, e; _i27 < _a27.length && ((e = _a27[_i27]), true); _i27++) if (e.diver && reachOK(f, e, 0.2)) { f.bitHit = true; biteDiver(e, f); return; }
   } else {
     const T = f.target;
     if (T && T.diver) { if (reachOK(f, T, 0.2)) { f.bitHit = true; biteDiver(T, f); } return; }
@@ -2827,7 +2846,7 @@ function react(T, A) {
   if (q >= 1.1) { T.mode = 'flee'; T.target = A; aiAbility(T, 'flee', A); }
   else { T.mode = 'hunt'; T.target = A; T.hungry = true; T.chaseT = 0; T.angryT = 4; T.restT = 0; }
   if (T.sp === 'pirana') {
-    for (const o of g.fish) {
+    for (let _i28 = 0, _a28 = g.fish, o; _i28 < _a28.length && ((o = _a28[_i28]), true); _i28++) {
       if (o === T || o.dead || o.isP || o.sp !== 'pirana') continue;
       if (d2(o.x, o.y, T.x, T.y) < 450 * 450 && rEff(A) / o.r <= 1.3) { o.mode = 'hunt'; o.target = A; o.angryT = 4; o.chaseT = 0; o.restT = 0; }
     }
@@ -2907,7 +2926,7 @@ function gulpMore(A, T) {
   if (extra <= 0) return;
   const mx = A.x + Math.cos(A.ang) * A.r, my = A.y + Math.sin(A.ang) * A.r, lim = A.r * 0.8 + 10;
   let n = 0;
-  for (const m of game.fish) {
+  for (let _i29 = 0, _a29 = game.fish, m; _i29 < _a29.length && ((m = _a29[_i29]), true); _i29++) {
     if (n >= extra) break;
     if (!m.member || m.dead || m === T) continue;
     if (d2(mx, my, m.x, m.y) < lim * lim) { n++; eat(A, m, 'gulp'); }
@@ -2973,12 +2992,12 @@ function birdTarget(b) {
     if (dd < bd) { bd = dd; best = T; }
   };
   if (!P.dead && !P.air && P.inv <= 0 && P.hidden <= 0 && P.y < 150 + P.r * 2 && P.r <= b.r * 1.35) test(P, 0.7);
-  for (const f of g.fish) if (!f.isP && !f.dead && !f.air && f.hidden <= 0 && f.y < 130 + f.r && f.r <= b.r * 0.9 && f.r >= b.r * 0.25) test(f, 1);
+  for (let _i30 = 0, _a30 = g.fish, f; _i30 < _a30.length && ((f = _a30[_i30]), true); _i30++) if (!f.isP && !f.dead && !f.air && f.hidden <= 0 && f.y < 130 + f.r && f.r <= b.r * 0.9 && f.r >= b.r * 0.25) test(f, 1);
   return best;
 }
 function updBirds(dt) {
   const g = game, P = g.P, vr = viewRadius();
-  for (const b of g.birds) {
+  for (let _i31 = 0, _a31 = g.birds, b; _i31 < _a31.length && ((b = _a31[_i31]), true); _i31++) {
     if (b.dead) continue;
     b.t += dt;
     if (b.flash > 0) b.flash -= dt;
@@ -3052,8 +3071,8 @@ function startAbility(f) {
     case 'power': f.power = 4.5; break;
     case 'hide':
       f.hidden = 3.5;
-      for (const o of g.fish) if (o.target === f && o !== f) { o.target = null; o.mode = 'wander'; o.restT = 1.5; }
-      for (const b of g.birds) if (b.tgt === f) { b.tgt = null; b.st = 'rise'; }
+      for (let _i32 = 0, _a32 = g.fish, o; _i32 < _a32.length && ((o = _a32[_i32]), true); _i32++) if (o.target === f && o !== f) { o.target = null; o.mode = 'wander'; o.restT = 1.5; }
+      for (let _i33 = 0, _a33 = g.birds, b; _i33 < _a33.length && ((b = _a33[_i33]), true); _i33++) if (b.tgt === f) { b.tgt = null; b.st = 'rise'; }
       puff(f.x, f.y, '#ffffff', 8, 60, Math.max(2, f.r * 0.2));
       break;
     case 'glide':
@@ -3084,7 +3103,7 @@ function useAbility() {
   if (P.dead || P.abT > 0) return;
   if (g.mode === 'school') {
     g.ballT = SCHOOL_BALL; P.abT = SCHOOL_BALL_CD;
-    for (const o of g.fish) if (!o.member && o.target && o.target.member) { o.target = null; o.mode = 'wander'; o.restT = 1.2; }
+    for (let _i34 = 0, _a34 = g.fish, o; _i34 < _a34.length && ((o = _a34[_i34]), true); _i34++) if (!o.member && o.target && o.target.member) { o.target = null; o.mode = 'wander'; o.restT = 1.2; }
     g.rings.push({ x: g.cx, y: g.cy, r: 20, max: (g.ballR || 60) * 2, t: 0, col: '#dffcff' });
     return;
   }
@@ -3113,7 +3132,7 @@ function aiAbility(f, sit, o) {
 function doShock(A) {
   const g = game, R = A.r * 4.5 + 70;
   g.rings.push({ x: A.x, y: A.y, r: A.r, max: R, t: 0, col: '#f6e24b', bolt: true });
-  for (const T of g.fish) {
+  for (let _i35 = 0, _a35 = g.fish, T; _i35 < _a35.length && ((T = _a35[_i35]), true); _i35++) {
     if (T === A || T.dead) continue;
     const d = Math.sqrt(d2(A.x, A.y, T.x, T.y));
     if (d > R + T.r * 0.5) continue;
@@ -3130,7 +3149,7 @@ function doInk(A) {
     const a = rand(0, TAU), s = rand(20, 150);
     g.parts.push({ x: A.x, y: A.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rand(1.6, 2.6), max: 2.6, col: 'ink', r: A.r * rand(0.7, 1.4), g: 0, drag: 2.2, grow: A.r * 1.6 });
   }
-  for (const T of g.fish) {
+  for (let _i36 = 0, _a36 = g.fish, T; _i36 < _a36.length && ((T = _a36[_i36]), true); _i36++) {
     if (T === A || T.dead || d2(A.x, A.y, T.x, T.y) > R * R) continue;
     if (T.isP) { if (T.shield <= 0) T.blind = 2.2; }
     else { T.blind = 3.2; if (T.target === A) { T.target = null; T.mode = 'wander'; } }
@@ -3140,7 +3159,7 @@ function doInk(A) {
 function doSting(A) {
   const g = game, R = A.r * 3.2 + 70;
   g.rings.push({ x: A.x, y: A.y, r: A.r, max: R, t: 0, col: '#c07ae8' });
-  for (const T of g.fish) {
+  for (let _i37 = 0, _a37 = g.fish, T; _i37 < _a37.length && ((T = _a37[_i37]), true); _i37++) {
     if (T === A || T.dead || d2(A.x, A.y, T.x, T.y) > (R + T.r * 0.5) ** 2) continue;
     if (T.isP && (T.inv > 0 || T.shield > 0)) continue;
     T.poisonT = 4; T.poisonDps = 0.35 * A.r * SP.raya.bite * (A.isP ? upMul('bite') : 1) * (T.member ? 0.4 : 1); T.poisonSrc = A; T.slowT = 2.5;
@@ -3154,7 +3173,7 @@ function think(f) {
   if (f.stun > 0 || f.charge > 0 || f.air) return;
   if (f.blind > 0) { f.mode = 'wander'; f.target = null; return; }
   if (g.lurers.length && f.r < 70) {
-    for (const L of g.lurers) {
+    for (let _i38 = 0, _a38 = g.lurers, L; _i38 < _a38.length && ((L = _a38[_i38]), true); _i38++) {
       if (L === f || L.dead || f.r > L.r * 0.75) continue;
       const R = L.r * 8 + 200;
       if (d2(f.x, f.y, L.x, L.y) < R * R) { f.mode = 'lured'; f.target = L; return; }
@@ -3166,7 +3185,7 @@ function think(f) {
   // Banco de peces: los cazadores van a por las sardinas aunque no tengan hambre, y también los muy grandes
   const schoolHunt = g.mode === 'school' && !f.member && s.aggr >= 0.3 && f.restT <= 0;
   const fr = rEff(f);
-  for (const o of g.fish) {
+  for (let _i39 = 0, _a39 = g.fish, o; _i39 < _a39.length && ((o = _a39[_i39]), true); _i39++) {
     if (o === f || o.dead || o.hidden > 0) continue;
     const dd = d2(f.x, f.y, o.x, o.y);
     if (dd > s2) continue;
@@ -3253,7 +3272,7 @@ function steerAI(f, dt) {
   }
   // Separación: no amontonarse
   let sx = 0, sy = 0;
-  for (const o of g.fish) {
+  for (let _i40 = 0, _a40 = g.fish, o; _i40 < _a40.length && ((o = _a40[_i40]), true); _i40++) {
     if (o === f || o.dead || o === f.target) continue;
     const R = (f.r + o.r) * 2.2;
     const ex = f.x - o.x; if (ex > R || ex < -R) continue;
@@ -3392,7 +3411,7 @@ function bellyFlop(P, vy) {
   const fly = P.sp === 'volador' ? 1.5 : 1;
   const R = (P.r * 2.2 + 30) * fly;
   let hits = 0;
-  for (const T of g.fish) {
+  for (let _i41 = 0, _a41 = g.fish, T; _i41 < _a41.length && ((T = _a41[_i41]), true); _i41++) {
     if (T === P || T.dead || T.air) continue;
     if (T.y > P.r * 4 + T.r) continue;
     if (Math.abs(T.x - P.x) > R + T.r) continue;
@@ -3412,7 +3431,7 @@ function bellyFlop(P, vy) {
 // ================= Actualización =================
 function timers(f, dt) {
   f.biteT -= dt; f.biteWin -= dt; f.mouth -= dt; f.abT -= dt; f.leapCD -= dt;
-  for (const k of TIMERS) if (f[k] > 0) f[k] -= dt;
+  for (let _i42 = 0, _a42 = TIMERS, k; _i42 < _a42.length && ((k = _a42[_i42]), true); _i42++) if (f[k] > 0) f[k] -= dt;
 }
 
 function specials(f, dt) {
@@ -3422,7 +3441,7 @@ function specials(f, dt) {
     if (f.spikeT <= 0) {
       f.spikeT = 0.45;
       const R = rEff(f);
-      for (const T of g.fish) {
+      for (let _i43 = 0, _a43 = g.fish, T; _i43 < _a43.length && ((T = _a43[_i43]), true); _i43++) {
         if (T === f || T.dead) continue;
         const lim = R + T.r * 0.6;
         if (d2(f.x, f.y, T.x, T.y) < lim * lim) {
@@ -3434,7 +3453,7 @@ function specials(f, dt) {
   }
   if (f.charge > 0 && f.chargeHit) {
     const tx = f.x + Math.cos(f.ang) * f.r * 1.5, ty = f.y + Math.sin(f.ang) * f.r * 1.5;
-    for (const T of g.fish) {
+    for (let _i44 = 0, _a44 = g.fish, T; _i44 < _a44.length && ((T = _a44[_i44]), true); _i44++) {
       if (T === f || T.dead || f.chargeHit.has(T)) continue;
       if (T.isP && (T.inv > 0 || T.shield > 0)) continue;
       const lim = rEff(T) * 0.9 + f.r * 0.5;
@@ -3468,7 +3487,7 @@ function updEvents(dt) {
     g.evT -= dt;
     if (g.evT <= 0) g.evT = startEvent() ? rand(EVENT_EVERY[0], EVENT_EVERY[1]) / DF.events : 6;
   }
-  for (const e of g.events) { if (e.type === 'diver') updDiver(e, dt); else updBoat(e, dt); }
+  for (let _i45 = 0, _a45 = g.events, e; _i45 < _a45.length && ((e = _a45[_i45]), true); _i45++) { if (e.type === 'diver') updDiver(e, dt); else updBoat(e, dt); }
   g.events = g.events.filter((e) => !e.done);
   updHarpoons(dt);
 }
@@ -3619,14 +3638,14 @@ function segDist2(ax, ay, bx, by, px, py) {
 }
 function updHarpoons(dt) {
   const g = game, T = evTarget();
-  for (const h of g.harpoons) {
+  for (let _i46 = 0, _a46 = g.harpoons, h; _i46 < _a46.length && ((h = _a46[_i46]), true); _i46++) {
     h.t -= dt;
     if (h.st !== 'fly') continue;
     const x0 = h.x, y0 = h.y;
     h.x += h.vx * dt; h.y += h.vy * dt;
     h.near = Math.min(h.near, segDist2(x0, y0, h.x, h.y, T.x, T.y));
     if (h.y > floorY(h.x) - 3 || h.y < -5 || h.t <= 0) { h.st = 'stuck'; h.t = h.y > 0 ? 1.4 : 0; }
-    else for (const f of g.fish) {
+    else for (let _i47 = 0, _a47 = g.fish, f; _i47 < _a47.length && ((f = _a47[_i47]), true); _i47++) {
       if (f.dead || h.hit.has(f)) continue;
       const rr = rEff(f) * 0.8 + 3;
       if (Math.abs(f.x - h.x) > rr + 40 || segDist2(x0, y0, h.x, h.y, f.x, f.y) > rr * rr) continue;
@@ -3751,7 +3770,7 @@ function readStick() {
 function updateSchool(dt) {
   const g = game, P = g.P, M = [];
   let cx = 0, cy = 0, rs = 0;
-  for (const f of g.fish) if (f.member && !f.dead) { M.push(f); cx += f.x; cy += f.y; rs += f.r; }
+  for (let _i48 = 0, _a48 = g.fish, f; _i48 < _a48.length && ((f = _a48[_i48]), true); _i48++) if (f.member && !f.dead) { M.push(f); cx += f.x; cy += f.y; rs += f.r; }
   let N = M.length;
   g.schoolN = N;
   if (!N) { gameOver(g.lastKiller, g.lastHow || 'school'); return; }
@@ -3770,22 +3789,22 @@ function updateSchool(dt) {
   if (c.mag > 0) P.ang = Math.atan2(c.dy, c.dx);
   P.r = schoolR(N);
   // 2) Sardinas sueltas que se cruzan con el banco se unen a él
-  for (const f of g.fish) {
+  for (let _i49 = 0, _a49 = g.fish, f; _i49 < _a49.length && ((f = _a49[_i49]), true); _i49++) {
     if (N >= SCHOOL_MAX) break;
     if (f.member || f.dead || f.sp !== 'sardina' || f.r > 16 || f.r < 6 || f.air) continue;
-    for (const m of M) if (d2(f.x, f.y, m.x, m.y) < 34 * 34) { recruitWild(f); M.push(f); N++; break; }
+    for (let _i50 = 0, _a50 = M, m; _i50 < _a50.length && ((m = _a50[_i50]), true); _i50++) if (d2(f.x, f.y, m.x, m.y) < 34 * 34) { recruitWild(f); M.push(f); N++; break; }
   }
   // 3) Ataque en grupo: cada sardina va a por la presa más cercana de las tres mejores
   const atk = !ball && (input.biteHeld || input.keys.bite || g.atkT > 0);
   let C = null;
   if (atk) {
     const range = 230 + Math.sqrt(N) * 22, r2 = range * range, L = [];
-    for (const f of g.fish) {
+    for (let _i51 = 0, _a51 = g.fish, f; _i51 < _a51.length && ((f = _a51[_i51]), true); _i51++) {
       if (f.member || f.dead || f.hidden > 0 || f.air) continue;
       const dd = d2(cx, cy, f.x, f.y);
       if (dd < r2) L.push([dd * (f.r >= SWALLOW * g.rep.r ? 4 : 1), f]);
     }
-    for (const e of g.events) if (e.diver && e.st !== 'flee' && e.st !== 'leave' && e.st !== 'jump') { const dd = d2(cx, cy, e.x, e.y); if (dd < (range + 260) ** 2) L.push([dd * 0.05, e]); }
+    for (let _i52 = 0, _a52 = g.events, e; _i52 < _a52.length && ((e = _a52[_i52]), true); _i52++) if (e.diver && e.st !== 'flee' && e.st !== 'leave' && e.st !== 'jump') { const dd = d2(cx, cy, e.x, e.y); if (dd < (range + 260) ** 2) L.push([dd * 0.05, e]); }
     if (L.length) { L.sort((a, b) => a[0] - b[0]); C = L.slice(0, 3).map((q) => q[1]); }
   }
   g.atkTarget = C ? C[0] : null;
@@ -3795,10 +3814,10 @@ function updateSchool(dt) {
   g.ballR = R;
   const rot = ball ? g.t * 2.4 : 0, cr = Math.cos(rot), sr = Math.sin(rot);
   const H = [];                                            // depredadores atacando al banco ahora mismo
-  if (!ball) for (const f of g.fish) if (!f.member && !f.dead && f.mode === 'hunt' && f.target && f.target.member) H.push(f);
+  if (!ball) for (let _i53 = 0, _a53 = g.fish, f; _i53 < _a53.length && ((f = _a53[_i53]), true); _i53++) if (!f.member && !f.dead && f.mode === 'hunt' && f.target && f.target.member) H.push(f);
   const AL = [];                                           // líneas de tiro de los buceadores a punto de disparar
-  for (const e of g.events) if (e.diver && e.st === 'aim' && e.t > AIM_LOCK - 0.15) { const m = diverMuzzle(e), a = Math.atan2(e.ay - m.y, e.ax - m.x); AL.push({ x: m.x, y: m.y, c: Math.cos(a), s: Math.sin(a) }); }
-  for (const m of M) {
+  for (let _i54 = 0, _a54 = g.events, e; _i54 < _a54.length && ((e = _a54[_i54]), true); _i54++) if (e.diver && e.st === 'aim' && e.t > AIM_LOCK - 0.15) { const m = diverMuzzle(e), a = Math.atan2(e.ay - m.y, e.ax - m.x); AL.push({ x: m.x, y: m.y, c: Math.cos(a), s: Math.sin(a) }); }
+  for (let _i55 = 0, _a55 = M, m; _i55 < _a55.length && ((m = _a55[_i55]), true); _i55++) {
     m.wantLeap = false;
     if (m.air) { m.target = null; continue; }
     if (m.stun > 0) { m.target = null; steer(m, null, 0, dt, 1); continue; }
@@ -3806,7 +3825,7 @@ function updateSchool(dt) {
     if (!T && C) { let bd = Infinity; for (const f of C) { if (f.dead) continue; const dd = d2(m.x, m.y, f.x, f.y); if (dd < bd) { bd = dd; T = f; } } }
     if (!T && !ball && m.biteT <= 0) {
       // Las presas pequeñas que pillan al paso se las tragan solas
-      for (const f of g.fish) {
+      for (let _i56 = 0, _a56 = g.fish, f; _i56 < _a56.length && ((f = _a56[_i56]), true); _i56++) {
         if (f.member || f.dead || f.hidden > 0 || f.inflate > 0) continue;
         const ddx = f.x - m.x; if (ddx > 45 || ddx < -45) continue;
         const ddy = f.y - m.y; if (ddy > 45 || ddy < -45) continue;
@@ -3828,11 +3847,11 @@ function updateSchool(dt) {
     const ty = clamp(P.y + oy * R * (ball ? 1 : 0.8) + Math.cos(m.ph * 0.7) * 4, 28, floorY(tx) - 18);
     const dx = tx - m.x, dy = ty - m.y, dist = Math.hypot(dx, dy);
     let ax = 0, ay = 0;                                    // el banco se abre al paso del cazador
-    for (const h of H) {
+    for (let _i57 = 0, _a57 = H, h; _i57 < _a57.length && ((h = _a57[_i57]), true); _i57++) {
       const ex = m.x - h.x, ey = m.y - h.y, RR = 100 + h.r * 1.5, dd = ex * ex + ey * ey;
       if (dd < RR * RR && dd > 1) { const d = Math.sqrt(dd), w = 1 - d / RR; ax += ex / d * w; ay += ey / d * w; }
     }
-    for (const l of AL) {                                  // apartarse de la línea roja
+    for (let _i58 = 0, _a58 = AL, l; _i58 < _a58.length && ((l = _a58[_i58]), true); _i58++) {                                  // apartarse de la línea roja
       const px = m.x - l.x, py = m.y - l.y, along = px * l.c + py * l.s, perp = -px * l.s + py * l.c;
       if (along > 0 && Math.abs(perp) < 46) { const w = 1 - Math.abs(perp) / 46, sg = perp >= 0 ? 1 : -1; ax += -l.s * sg * w * 1.6; ay += l.c * sg * w * 1.6; }
     }
@@ -3844,9 +3863,9 @@ function updateSchool(dt) {
     if (dist > 150 && m.dash <= 0) m.dash = 0.3;
   }
   // 5) Krill: se lo comen al pasar
-  for (const kr of g.krill) {
+  for (let _i59 = 0, _a59 = g.krill, kr; _i59 < _a59.length && ((kr = _a59[_i59]), true); _i59++) {
     if (kr.dead) continue;
-    for (const m of M) {
+    for (let _i60 = 0, _a60 = M, m; _i60 < _a60.length && ((m = _a60[_i60]), true); _i60++) {
       const ddx = kr.x - m.x; if (ddx > 22 || ddx < -22) continue;
       const ddy = kr.y - m.y; if (ddy > 22 || ddy < -22) continue;
       const q = m.r + 5;
@@ -3854,8 +3873,8 @@ function updateSchool(dt) {
     }
   }
   // 6) Medusas: pican a las sardinas que las tocan
-  for (const j of g.jelly) {
-    for (const m of M) {
+  for (let _i61 = 0, _a61 = g.jelly, j; _i61 < _a61.length && ((j = _a61[_i61]), true); _i61++) {
+    for (let _i62 = 0, _a62 = M, m; _i62 < _a62.length && ((m = _a62[_i62]), true); _i62++) {
       if (j.dead) break;
       if (m.dead || m.stingT > 0) continue;
       const q = j.r * 0.85 + m.r * 0.6;
@@ -3869,9 +3888,9 @@ function updateSchool(dt) {
     }
   }
   // 7) Cofres hundidos: los abre cualquier sardina que pase cerca
-  for (const ch of g.chests) {
+  for (let _i63 = 0, _a63 = g.chests, ch; _i63 < _a63.length && ((ch = _a63[_i63]), true); _i63++) {
     if (ch.open || Math.abs(ch.x - cx) > R + 150) continue;
-    for (const m of M) if (!m.dead && d2(m.x, m.y, ch.x, ch.y - 14) < 36 * 36) { openWorldChest(ch); break; }
+    for (let _i64 = 0, _a64 = M, m; _i64 < _a64.length && ((m = _a64[_i64]), true); _i64++) if (!m.dead && d2(m.x, m.y, ch.x, ch.y - 14) < 36 * 36) { openWorldChest(ch); break; }
   }
   // 8) Racha larga: el banco deja chispas
   if (g.combo >= 4 && g.comboT > 0 && Math.random() < dt * 26) {
@@ -3937,16 +3956,16 @@ function openWorldChest(c) {
 
 function updateWorld(dt) {
   const g = game, P = g.P;
-  for (const c of g.chests) c.x = nearX(c.x, P.x);
+  for (let _i65 = 0, _a65 = g.chests, c; _i65 < _a65.length && ((c = _a65[_i65]), true); _i65++) c.x = nearX(c.x, P.x);
   if (g.gem) g.gem.x = nearX(g.gem.x, P.x);
-  for (const k of g.krill) {
+  for (let _i66 = 0, _a66 = g.krill, k; _i66 < _a66.length && ((k = _a66[_i66]), true); _i66++) {
     k.ph += dt * 3; k.x += (k.vx + Math.sin(k.ph) * 6) * dt; k.y += (k.vy + Math.cos(k.ph * 0.7) * 5) * dt;
     if (!g.demo && !P.dead && P.r < 80 && g.mode !== 'school') {
       const mx = P.x + Math.cos(P.ang) * P.r * 0.9, my = P.y + Math.sin(P.ang) * P.r * 0.9, rr = P.r * 0.75 + 5;
       if (d2(mx, my, k.x, k.y) < rr * rr) { k.dead = true; grow(P, 5); g.score += 1; sfx('krill'); bubbles(k.x, k.y, 2, 3); }
     }
   }
-  for (const j of g.jelly) {
+  for (let _i67 = 0, _a67 = g.jelly, j; _i67 < _a67.length && ((j = _a67[_i67]), true); _i67++) {
     j.ph += dt; j.x += j.vx * dt; j.y += Math.sin(j.ph * 0.8) * 14 * dt;
     if (!g.demo && !P.dead && P.inv <= 0) {
       const lim = j.r * 0.85 + P.r * 0.6;
@@ -3966,8 +3985,8 @@ function updateWorld(dt) {
       }
     }
   }
-  for (const sw of g.insects) {
-    for (const b of sw.bugs) {
+  for (let _i68 = 0, _a68 = g.insects, sw; _i68 < _a68.length && ((sw = _a68[_i68]), true); _i68++) {
+    for (let _i69 = 0, _a69 = sw.bugs, b; _i69 < _a69.length && ((b = _a69[_i69]), true); _i69++) {
       b.ph += dt * 3;
       b.x = sw.x + b.ox + Math.sin(b.ph) * 14; b.y = sw.y + b.oy + Math.cos(b.ph * 1.3) * 10;
       if (!g.demo && !P.dead && P.air) {
@@ -3988,7 +4007,7 @@ function updateWorld(dt) {
   }
   g.krill = g.krill.filter((k) => !k.dead);
   g.jelly = g.jelly.filter((j) => !j.dead);
-  for (const c of g.chests) {
+  for (let _i70 = 0, _a70 = g.chests, c; _i70 < _a70.length && ((c = _a70[_i70]), true); _i70++) {
     if (c.open) { c.t += dt; continue; }
     if (g.demo || P.dead || Math.abs(c.x - P.x) > P.r * 3 + 80) continue;
     const lim = P.r * 0.9 + 28;
@@ -4001,7 +4020,7 @@ function manageSpawns() {
   g.fish = g.fish.filter((f) => f.isP || (f.member && !f.dead) || (!f.dead && d2(f.x, f.y, P.x, P.y) < far));
   g.krill = g.krill.filter((k) => d2(k.x, k.y, P.x, P.y) < far);
   g.jelly = g.jelly.filter((j) => d2(j.x, j.y, P.x, P.y) < far);
-  const count = () => { let n = 0; for (const f of g.fish) if (!f.isP && !f.member) n++; return n; };
+  const count = () => { let n = 0; for (let _i71 = 0, _a71 = g.fish, f; _i71 < _a71.length && ((f = _a71[_i71]), true); _i71++) if (!f.isP && !f.member) n++; return n; };
   const target = TARGET[zoneOf(P.x, P.y)];
   for (let i = 0; i < 2 && count() < target; i++) spawnFish(false);
   if (P.r < 60 && g.krill.length < (g.mode === 'school' ? 45 : 30)) spawnKrill(false);
@@ -4081,7 +4100,7 @@ function update(dt) {
   g.zoneP = zoneOf(P.x, P.y);
   g.lurers = g.fish.filter((f) => !f.dead && f.lure > 0);
   let hp = 0, hs = 0, dF = null, dD = Infinity;
-  for (const f of g.fish) {
+  for (let _i72 = 0, _a72 = g.fish, f; _i72 < _a72.length && ((f = _a72[_i72]), true); _i72++) {
     if (f.isP || f.dead || f.mode !== 'hunt' || !f.target) continue;
     if (f.target === P) {
       hp++;
@@ -4090,14 +4109,14 @@ function update(dt) {
   }
   g.huntP = hp; g.huntS = hs; g.dangerF = dF;
   g.hcap = Math.max(1, Math.round(HCAP[g.zoneP] * DF.aggr));
-  for (const f of g.fish) {
+  for (let _i73 = 0, _a73 = g.fish, f; _i73 < _a73.length && ((f = _a73[_i73]), true); _i73++) {
     if (f.dead) continue;
     timers(f, dt);
     if (!f.isP && !f.member) { f.thinkT -= dt; if (f.thinkT <= 0) { f.thinkT = rand(0.18, 0.3); think(f); } steerAI(f, dt); }
   }
-  for (const f of g.fish) if (!f.dead && !(f.isP && P.dead)) physics(f, dt);
+  for (let _i74 = 0, _a74 = g.fish, f; _i74 < _a74.length && ((f = _a74[_i74]), true); _i74++) if (!f.dead && !(f.isP && P.dead)) physics(f, dt);
   collide();
-  for (const f of g.fish) {
+  for (let _i75 = 0, _a75 = g.fish, f; _i75 < _a75.length && ((f = _a75[_i75]), true); _i75++) {
     if (f.dead) continue;
     biteCheck(f);
     if (!f.dead) specials(f, dt);
@@ -4122,12 +4141,12 @@ function update(dt) {
     if (g.tip && g.t > g.tip.at) { toast(g.tip.txt, '#ffffff', 5); g.tip = null; }
   }
   if (g.toasts.length) { const q = g.toasts[0]; q.t += dt; if (q.t > q.dur) g.toasts.shift(); }
-  for (const p of g.parts) { p.vx *= Math.max(0, 1 - p.drag * dt); p.vy *= Math.max(0, 1 - p.drag * dt); p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; }
+  for (let _i76 = 0, _a76 = g.parts, p; _i76 < _a76.length && ((p = _a76[_i76]), true); _i76++) { p.vx *= Math.max(0, 1 - p.drag * dt); p.vy *= Math.max(0, 1 - p.drag * dt); p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; }
   g.parts = g.parts.filter((p) => p.life > 0);
   if (g.parts.length > 600) g.parts.splice(0, g.parts.length - 600);
-  for (const x of g.texts) x.t += dt;
+  for (let _i77 = 0, _a77 = g.texts, x; _i77 < _a77.length && ((x = _a77[_i77]), true); _i77++) x.t += dt;
   g.texts = g.texts.filter((x) => x.t < 1.4);
-  for (const r of g.rings) r.t += dt;
+  for (let _i78 = 0, _a78 = g.rings, r; _i78 < _a78.length && ((r = _a78[_i78]), true); _i78++) r.t += dt;
   g.rings = g.rings.filter((r) => r.t < 0.5);
   const cam = g.cam;
   cam.view += (viewFor(P.r) * (g.mode === 'school' ? 0.88 : 1) - cam.view) * Math.min(1, dt * 1.5);
@@ -4750,7 +4769,7 @@ function fishCol(f, s, t) {                               // colores del pez (y 
 // ---------- Sprites horneados ----------
 const LVS = [0.7, 1, 1.41, 2, 2.83, 4, 5.66, 8, 11.3, 16, 22.6];   // resoluciones (px del sprite por unidad)
 const SPR = { map: new Map(), alt: new Map(), px: 0, max: 7e6, frame: 0, spent: 0, free: false, tmp: [], bt: 0, bn: 0 };
-function sprLv(need) { for (const l of LVS) if (l >= need * 0.9) return l; return LVS[LVS.length - 1]; }
+function sprLv(need) { for (let _i79 = 0, _a79 = LVS, l; _i79 < _a79.length && ((l = _a79[_i79]), true); _i79++) if (l >= need * 0.9) return l; return LVS[LVS.length - 1]; }
 function sprTmp(i, W, H) {                                // lienzos de trabajo reutilizables
   let c = SPR.tmp[i];
   if (!c) c = SPR.tmp[i] = document.createElement('canvas');
@@ -5108,7 +5127,7 @@ function fishVis(f, t, G) {
   else if (f.mode === 'hunt' && f.target) { V.ex = 'hunt'; T = f.target; }
   if (V.ex === 'scared') V.pup = 0.22; else if (V.ex === 'hunt') V.pup = 0.32;
   if (T && T.x !== undefined) {
-    const c = Math.cos(f.ang), sx = G || f._fx === undefined ? (c >= 0 ? 1 : -1) : f._fx >= 0 ? 1 : -1, tilt = clamp(Math.atan2(Math.sin(f.ang), Math.abs(c)), -1.35, 1.35);
+    const c = Math.cos(f.ang), sx = G || !f._fx ? (c >= 0 ? 1 : -1) : f._fx >= 0 ? 1 : -1, tilt = clamp(Math.atan2(Math.sin(f.ang), Math.abs(c)), -1.35, 1.35);
     const a = (T.x - f.x) * sx, b = T.y - f.y, ct = Math.cos(tilt), st = Math.sin(tilt);
     const lx = a * ct + b * st, ly = -a * st + b * ct, l = Math.hypot(lx, ly) || 1;
     V.lx = lx / l; V.ly = ly / l;
@@ -5172,7 +5191,7 @@ function starPath(x, y, r) {
 // Giro: cuando un pez cambia de sentido no se voltea de golpe; se va girando (se estrecha y se abre
 // hacia el otro lado) en unas décimas de segundo, más despacio cuanto más grande es.
 function turnFx(f, want, t) {
-  if (f._fs === undefined) { f._fs = want; f._ft = -99; }
+  if (!f._fs) { f._fs = want; f._ft = -99; }
   const D = clamp(0.07 + (f.r || 10) * 0.0004, 0.07, 0.13);
   let u = clamp((t - f._ft) / D, 0, 1);
   if (want !== f._fs) {
@@ -5315,13 +5334,13 @@ function addGhost(f, kind, A) {
 function updGhosts(dt) {
   const g = game;
   if (!g.ghosts || !g.ghosts.length) return;
-  for (const q of g.ghosts) q.t += dt;
+  for (let _i80 = 0, _a80 = g.ghosts, q; _i80 < _a80.length && ((q = _a80[_i80]), true); _i80++) q.t += dt;
   g.ghosts = g.ghosts.filter((q) => q.t < q.dur);
 }
 function drawGhosts(t, sc) {
   const g = game;
   if (!g.ghosts) return;
-  for (const q of g.ghosts) {
+  for (let _i81 = 0, _a81 = g.ghosts, q; _i81 < _a81.length && ((q = _a81[_i81]), true); _i81++) {
     const f = q.f, u = clamp(q.t / q.dur, 0, 1);
     if (q.kind === 'gulp') {
       const A = q.A, ok = A && A.x !== undefined;
@@ -5382,23 +5401,32 @@ function drawBird(b, t, ol, sc) {
   }
 }
 
+let KRS = null;
+function krillSpr() {                                    // krill a 8 px por unidad: caja de (-5.5,-3.5) a (5.5,5)
+  if (KRS) return KRS;
+  const S = 8, c = document.createElement('canvas'); c.width = 11 * S; c.height = 8.5 * S;
+  const x = c.getContext('2d'); x.setTransform(S, 0, 0, S, 5.5 * S, 3.5 * S);
+  x.fillStyle = '#ff9fb2'; x.beginPath(); x.ellipse(0, 0, 4.5, 2.3, 0, 0, TAU); x.fill();
+  x.strokeStyle = '#d9667f'; x.lineWidth = 0.8; x.lineCap = 'round'; x.beginPath(); x.moveTo(-3, 1.5); x.lineTo(-4, 3.5); x.moveTo(0, 2); x.lineTo(0, 4); x.stroke();
+  x.fillStyle = OUT; x.beginPath(); x.arc(3, -0.6, 0.8, 0, TAU); x.fill();
+  KRS = c; return c;
+}
 function drawKrill(k) {
   ctx.save(); ctx.translate(k.x, k.y); ctx.rotate(Math.sin(k.ph) * 0.4);
-  ctx.fillStyle = '#ff9fb2'; ell(0, 0, 4.5, 2.3); ctx.fill();
-  ctx.strokeStyle = '#d9667f'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(-3, 1.5); ctx.lineTo(-4, 3.5); ctx.moveTo(0, 2); ctx.lineTo(0, 4); ctx.stroke();
-  ctx.fillStyle = OUT; ctx.beginPath(); ctx.arc(3, -0.6, 0.8, 0, TAU); ctx.fill();
+  ctx.drawImage(krillSpr(), -5.5, -3.5, 11, 8.5);
   ctx.restore();
 }
 function drawJelly(j, ol, sc) {
   const x = j.x, y = j.y, r = j.r, pul = 1 + Math.sin(j.ph * 3) * 0.06;
   const col = j.deep ? [120, 220, 255] : [247, 166, 232];
   ctx.strokeStyle = 'rgba(' + col.join(',') + ',0.55)'; ctx.lineWidth = Math.max(1, r * 0.06); ctx.lineCap = 'round';
+  ctx.beginPath();
   for (let i = 0; i < 5; i++) {
     const tx = x - r * 0.6 + i * r * 0.3;
-    ctx.beginPath(); ctx.moveTo(tx, y + r * 0.1);
+    ctx.moveTo(tx, y + r * 0.1);
     for (let s = 1; s <= 6; s++) ctx.lineTo(tx + Math.sin(j.ph * 2 + s * 0.9 + i) * r * 0.12, y + r * 0.1 + s * r * 0.26);
-    ctx.stroke();
   }
+  ctx.stroke();
   ctx.fillStyle = 'rgba(' + col.join(',') + ',0.55)';
   ctx.beginPath(); ctx.ellipse(x, y, r * 0.9 * pul, r * 0.7 / pul, 0, Math.PI, TAU); ctx.quadraticCurveTo(x, y + r * 0.35, x - r * 0.9 * pul, y); ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.ellipse(x - r * 0.3, y - r * 0.35, r * 0.2, r * 0.12, -0.4, 0, TAU); ctx.fill();
@@ -5542,7 +5570,7 @@ function backY(L, wx, cam, sh, sc) {
 }
 function drawBackLayers(cam, sw, sh, sc, t) {
   const vis = 1 - ZM.fog;
-  if (vis > 0.04) for (const L of BACKL) {
+  if (vis > 0.04) for (let _i82 = 0, _a82 = BACKL, L; _i82 < _a82.length && ((L = _a82[_i82]), true); _i82++) {
     const k = sc * L.p, wl = cam.x - (sw / 2 + L.step) / k, wr = cam.x + (sw / 2 + L.step) / k;
     let top = Infinity;
     const P = [];
@@ -5663,17 +5691,18 @@ function drawForeground(cam, sw, sh, sc, t) {
   ctx.globalAlpha = 1;
 }
 // Los sprites del primer plano son blancos: se tiñen del color de la zona al dibujarlos
+const FGT = {};
 function fgTinted(kind, col) {
-  const key = kind + ':' + col.map((v) => Math.round(v / 8)).join(',');
-  if (FGS[key]) return FGS[key];
-  const src = fgSprite(kind), c = document.createElement('canvas');
-  c.width = src.width; c.height = src.height;
-  const x = c.getContext('2d');
-  x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = rgba(col, 1); x.fillRect(0, 0, c.width, c.height);
-  const keys = Object.keys(FGS).filter((q) => q.indexOf(':') > 0);
-  if (keys.length > 24) for (const q of keys) delete FGS[q];
-  FGS[key] = c;
-  return c;
+  let e = FGT[kind];
+  if (e && Math.abs(e.c[0] - col[0]) < 10 && Math.abs(e.c[1] - col[1]) < 10 && Math.abs(e.c[2] - col[2]) < 10) return e.cv;
+  const src = fgSprite(kind);
+  if (!e) { const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; e = FGT[kind] = { cv: c, x: c.getContext('2d'), c: [0, 0, 0] }; }
+  const x = e.x;
+  x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, e.cv.width, e.cv.height);
+  x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = rgba(col, 1); x.fillRect(0, 0, e.cv.width, e.cv.height);
+  x.globalCompositeOperation = 'source-over';
+  e.c[0] = col[0]; e.c[1] = col[1]; e.c[2] = col[2];
+  return e.cv;
 }
 
 // Arena: ondas, piedrecitas con sombra y sombras suaves bajo los objetos
@@ -5734,7 +5763,7 @@ function drawSeabed(x0, x1, y1, t, sc) {
   let minF = Infinity;
   for (let x = x0 - 60; x <= x1 + 60; x += 50) minF = Math.min(minF, floorY(x));
   if (minF > y1 + 1300) return;
-  for (const wx0 of WORLD.wrecks) { const wx = nearX(wx0, (x0 + x1) / 2); if (wx > x0 - 600 && wx < x1 + 600) drawWreck(wx); }
+  for (let _i83 = 0, _a83 = WORLD.wrecks, wx0; _i83 < _a83.length && ((wx0 = _a83[_i83]), true); _i83++) { const wx = nearX(wx0, (x0 + x1) / 2); if (wx > x0 - 600 && wx < x1 + 600) drawWreck(wx); }
   const bot = Math.max(y1, minF) + 400;
   const xs = Math.floor((x0 - 60) / 50) * 50;
   const edge = () => { for (let x = xs; x <= x1 + 110; x += 50) ctx.lineTo(x, floorY(x)); };
@@ -5757,7 +5786,7 @@ function drawSeabed(x0, x1, y1, t, sc) {
   ctx.fillStyle = 'rgba(20,12,8,0.2)'; ctx.beginPath();
   for (let k = k0; k <= k1; k++) {
     const off = k * WORLD_W, lo = x0 - 250 - off, hi = x1 + 250 - off;
-    for (const d of WORLD.deco) {
+    for (let _i84 = 0, _a84 = WORLD.deco, d; _i84 < _a84.length && ((d = _a84[_i84]), true); _i84++) {
       if (d.x < lo || d.x > hi || d.k === 'kelp' || d.k === 'glow') continue;
       const w0 = DECO_W[d.k] ? DECO_W[d.k] * d.s : 0, x = d.x + off, fl = floorY(x - w0), fr = floorY(x + w0);
       if (w0 && Math.abs(fr - fl) > w0 * 1.8) continue;      // (igual que abajo: en pendientes fuertes no hay objeto)
@@ -5775,7 +5804,7 @@ function drawSeabed(x0, x1, y1, t, sc) {
   for (let k = k0; k <= k1; k++) {                        // copias del mapa visibles (en la costura, dos)
   const off = k * WORLD_W, lo = x0 - 250 - off, hi = x1 + 250 - off;
   ctx.save(); ctx.translate(off, 0);
-  for (const d of WORLD.deco) {
+  for (let _i85 = 0, _a85 = WORLD.deco, d; _i85 < _a85.length && ((d = _a85[_i85]), true); _i85++) {
     if (d.x < lo || d.x > hi) continue;
     const s = d.s, w = DECO_W[d.k] ? DECO_W[d.k] * s : 0;
     const fc = floorY(d.x), fl = floorY(d.x - w), fr = floorY(d.x + w);
@@ -5901,7 +5930,7 @@ function drawMarineSnow(cam, sw, sh, sc, t) {
     const depthA = clamp(0.35 + cam.y / 5000, 0.35, 1);
     const c0x = Math.floor((ox - hw) / L.cell), c1x = Math.floor((ox + hw) / L.cell);
     const c0y = Math.floor((oy - hh) / L.cell), c1y = Math.floor((oy + hh) / L.cell);
-    ctx.fillStyle = rgba(ZM.snow, 1);
+    const sn = ZM.snow, dot = dotSpr('rgb(' + (sn[0] & ~7) + ',' + (sn[1] & ~7) + ',' + (sn[2] & ~7) + ')');
     for (let cx = c0x; cx <= c1x; cx++) for (let cy = c0y; cy <= c1y; cy++) {
       const hsh = hash(cx * 7.13 + cy * 3.71 + L.par);
       if (hsh < 1 - 0.65 * GFX.snow) continue;
@@ -5911,7 +5940,7 @@ function drawMarineSnow(cam, sw, sh, sc, t) {
       if (wy < 30) continue;
       const sx = sw / 2 + (px - ox) * sc, sy = sh / 2 + (py - oy) * sc;
       ctx.globalAlpha = L.a * depthA * (0.5 + 0.5 * Math.sin(t + hsh * 30));
-      ctx.beginPath(); ctx.arc(sx, sy, L.r * (0.6 + hsh), 0, TAU); ctx.fill();
+      const R = L.r * (0.6 + hsh) * 16 / 15; ctx.drawImage(dot, sx - R, sy - R, R * 2, R * 2);
     }
   }
   ctx.globalAlpha = 1;
@@ -5920,11 +5949,11 @@ function drawMarineSnow(cam, sw, sh, sc, t) {
 function updGlow(dt) {
   const g = game;
   if (!g.glow) g.glow = [];
-  for (const q of g.glow) q.life -= dt;
+  for (let _i86 = 0, _a86 = g.glow, q; _i86 < _a86.length && ((q = _a86[_i86]), true); _i86++) q.life -= dt;
   g.glow = g.glow.filter((q) => q.life > 0);
   if (g.glow.length > 260) return;
   const cam = g.cam, R = cam.view * 1.3;
-  for (const f of g.fish) {
+  for (let _i87 = 0, _a87 = g.fish, f; _i87 < _a87.length && ((f = _a87[_i87]), true); _i87++) {
     if (f.dead || f.y < 3200 || Math.abs(f.x - cam.x) > R || Math.abs(f.y - cam.y) > R) continue;
     const sp = Math.hypot(f.vx, f.vy);
     if (sp < 45 || Math.random() > dt * (3 + sp / 60)) continue;
@@ -5935,7 +5964,7 @@ function drawGlow(sc) {
   const g = game;
   if (!g.glow || !g.glow.length) return;
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  for (const q of g.glow) {
+  for (let _i88 = 0, _a88 = g.glow, q; _i88 < _a88.length && ((q = _a88[_i88]), true); _i88++) {
     const a = clamp(q.life / 1.2, 0, 1);
     ctx.fillStyle = 'rgba(' + q.c + ',' + (0.55 * a).toFixed(3) + ')';
     ctx.beginPath(); ctx.arc(q.x, q.y, q.r * (1.6 - a * 0.6), 0, TAU); ctx.fill();
@@ -5989,24 +6018,66 @@ function birdColor(P, b) {
   return '#ffe066';
 }
 
+const DOTS = new Map();
+function dotSpr(col) {                                   // círculo lleno de 32 px (radio 15) para escalar a cualquier tamaño
+  let c = DOTS.get(col);
+  if (c) return c;
+  if (DOTS.size > 80) DOTS.clear();
+  c = document.createElement('canvas'); c.width = c.height = 32;
+  const x = c.getContext('2d'); x.fillStyle = col; x.beginPath(); x.arc(16, 16, 15, 0, TAU); x.fill();
+  DOTS.set(col, c);
+  return c;
+}
+let RINGS = null;
+function ringSpr() {                                     // burbuja: anillo de radio 13 y grosor ~25 %
+  if (RINGS) return RINGS;
+  const c = document.createElement('canvas'); c.width = c.height = 32;
+  const x = c.getContext('2d'); x.strokeStyle = '#e8fbff'; x.lineWidth = 3.4; x.beginPath(); x.arc(16, 16, 13, 0, TAU); x.stroke();
+  RINGS = c; return c;
+}
 function drawParts(ps) {
-  for (const p of ps) {
+  for (let _i89 = 0, _a89 = ps, p; _i89 < _a89.length && ((p = _a89[_i89]), true); _i89++) {
     const a = clamp(p.life / p.max, 0, 1);
     if (p.col === 'bub') {
-      ctx.globalAlpha = a * 0.8; ctx.strokeStyle = '#e8fbff'; ctx.lineWidth = Math.max(0.6, p.r * 0.25);
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.stroke();
+      ctx.globalAlpha = a * 0.8; const R = p.r * 16 / 13;
+      ctx.drawImage(ringSpr(), p.x - R, p.y - R, R * 2, R * 2);
     } else if (p.col === 'ink') {
-      ctx.globalAlpha = a * 0.85; ctx.fillStyle = '#1a0d22';
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r + (p.grow || 0) * (1 - a), 0, TAU); ctx.fill();
+      ctx.globalAlpha = a * 0.85; const R = (p.r + (p.grow || 0) * (1 - a)) * 16 / 15;
+      ctx.drawImage(dotSpr('#1a0d22'), p.x - R, p.y - R, R * 2, R * 2);
     } else {
-      ctx.globalAlpha = a; ctx.fillStyle = p.col;
-      ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.5, p.r * (0.5 + a * 0.5)), 0, TAU); ctx.fill();
+      ctx.globalAlpha = a; const R = Math.max(0.5, p.r * (0.5 + a * 0.5)) * 16 / 15;
+      ctx.drawImage(dotSpr(p.col), p.x - R, p.y - R, R * 2, R * 2);
     }
   }
   ctx.globalAlpha = 1;
 }
+// En el marcador (pantalla, sin zoom) los textos con contorno se guardan como imagen cuando se repiten 6 fotogramas seguidos.
+const TXT = { on: false, map: new Map(), frame: 0 };
+function otextCached(txt, x, y, size, fill, weight) {
+  const d = view.dpr, al = ctx.textAlign, key = txt + '|' + size + '|' + fill + '|' + (weight || 700) + '|' + Math.round(d * 20);
+  let e = TXT.map.get(key);
+  if (!e) {
+    if (TXT.map.size > 90) { for (const [k, q] of TXT.map) if (q.f < SPR.frame - 90) TXT.map.delete(k); if (TXT.map.size > 90) TXT.map.clear(); }
+    e = { n: 0, f: 0, cv: null, w: 0, pad: 0, h: 0 }; TXT.map.set(key, e);
+  }
+  e.n = e.f === SPR.frame - 1 || e.f === SPR.frame ? e.n + 1 : 1; e.f = SPR.frame;
+  if (!e.cv && e.n >= 6) {
+    const c = document.createElement('canvas'), q = c.getContext('2d'), font = (weight || 700) + ' ' + size + 'px ' + FONT;
+    q.font = font; const w = q.measureText(txt).width, pad = size * 0.11 + 2, hh = size * 1.5 + pad * 2;
+    c.width = Math.max(1, Math.ceil((w + pad * 2) * d)); c.height = Math.max(1, Math.ceil(hh * d));
+    q.setTransform(d, 0, 0, d, 0, 0); q.font = font; q.textAlign = 'left'; q.textBaseline = 'middle';
+    q.lineJoin = 'round'; q.lineWidth = size * 0.22; q.strokeStyle = OUT; q.strokeText(txt, pad, hh / 2);
+    q.fillStyle = fill; q.fillText(txt, pad, hh / 2);
+    e.cv = c; e.w = w; e.pad = pad; e.h = hh;
+  }
+  if (!e.cv) return false;
+  const lx = al === 'center' ? x - e.w / 2 : al === 'right' || al === 'end' ? x - e.w : x;
+  ctx.drawImage(e.cv, lx - e.pad, y - e.h / 2, e.cv.width / d, e.cv.height / d);
+  return true;
+}
 function otext(txt, x, y, size, fill, weight) {
   txt = tr(txt);
+  if (TXT.on && ctx.textBaseline === 'middle' && otextCached(txt, x, y, size, fill, weight)) return;
   ctx.font = (weight || 700) + ' ' + size + 'px ' + FONT;
   ctx.lineJoin = 'round'; ctx.lineWidth = size * 0.22; ctx.strokeStyle = OUT;
   ctx.strokeText(txt, x, y); ctx.fillStyle = fill; ctx.fillText(txt, x, y);
@@ -6078,6 +6149,10 @@ function drawToast(q, y, side) {
 
 const MINI = { cv: null, w: null, mw: 0, mh: 0, d: 0, k: null };
 function drawHUD(sc) {
+  TXT.on = true;
+  try { drawHUD0(sc); } finally { TXT.on = false; }
+}
+function drawHUD0(sc) {
   const g = game, P = g.P, sw = view.sw, sh = view.sh, d = view.dpr;
   ctx.setTransform(d, 0, 0, d, 0, 0);
   ctx.textBaseline = 'middle';
@@ -6134,7 +6209,7 @@ function drawHUD(sc) {
   ctx.drawImage(MINI.cv, mx, my, mw, mh);
   ctx.save(); rr(mx, my, mw, mh, 8); ctx.clip();
   ctx.fillStyle = '#ffd23f';
-  for (const c of g.chests) if (!c.open) { ctx.beginPath(); ctx.arc(mx + wrapX(c.x) / WORLD_W * mw, my + c.y / WORLD_H * mh - 1.5, 1.8, 0, TAU); ctx.fill(); }
+  for (let _i90 = 0, _a90 = g.chests, c; _i90 < _a90.length && ((c = _a90[_i90]), true); _i90++) if (!c.open) { ctx.beginPath(); ctx.arc(mx + wrapX(c.x) / WORLD_W * mw, my + c.y / WORLD_H * mh - 1.5, 1.8, 0, TAU); ctx.fill(); }
   ctx.restore();
   ctx.strokeStyle = 'rgba(234,255,251,0.7)'; ctx.lineWidth = 1.5; rr(mx, my, mw, mh, 8); ctx.stroke();
   ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(mx + wrapX(P.x) / WORLD_W * mw, my + Math.max(0, P.y) / WORLD_H * mh, 3.2, 0, TAU); ctx.fill();
@@ -6163,7 +6238,7 @@ function drawHUD(sc) {
     ctx.fillStyle = 'rgba(234,255,251,0.5)'; ctx.beginPath(); ctx.arc(st.x, st.y, 24, 0, TAU); ctx.fill();
   }
   const cam = g.cam, hw = sw / 2 / sc, hh = sh / 2 / sc;
-  for (const f of g.fish) {
+  for (let _i91 = 0, _a91 = g.fish, f; _i91 < _a91.length && ((f = _a91[_i91]), true); _i91++) {
     if (f.isP || f.member || f.dead || f.hidden > 0) continue;
     if (Math.abs(f.x - cam.x) < hw + f.r && Math.abs(f.y - cam.y) < hh + f.r) continue;
     const col = threatColor(sch ? g.rep : P, f);
@@ -6326,7 +6401,6 @@ function drawDiver(e, t, sc) {
   const S = DIVER_S, fx = Math.abs(e.fx) < 0.35 ? (e.fx < 0 ? -0.35 : 0.35) : e.fx;
   ctx.save();
   ctx.translate(e.x, e.y); ctx.scale(fx * S * (1 + 0.06 * (1 - Math.abs(fx))), S); ctx.rotate(e.tilt);
-  if (e.flash > 0) ctx.filter = 'brightness(1.9)';
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   const fast = e.st === 'flee' ? 11 : e.st === 'dive' ? 9 : 7;
   const kf = Math.sin(e.kick * fast);
@@ -6408,7 +6482,11 @@ function drawDiver(e, t, sc) {
   // brazo de delante y mano en la empuñadura
   dvLimb([26, -1, 32 + 6 * arm - rec * 0.5, 8 + 2 * (1 - arm), hx, hy], 8, DVC.suit);
   ctx.fillStyle = DVC.glove; ctx.beginPath(); ctx.arc(hx, hy, 4.4, 0, TAU); ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = 2; ctx.stroke();
-  ctx.filter = 'none';
+  if (e.flash > 0) {                                   // destello al recibir un mordisco: brillo aditivo (barato en móvil)
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.75 * clamp(e.flash / 0.15, 0, 1);
+    ctx.drawImage(glowSpr('255,255,255'), -48, -42, 112, 84);
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  }
   ctx.restore();
   if (e.st === 'aim') {                                // la línea roja avisa del disparo; al fijarse, parpadea
     const m = diverMuzzle(e), a = Math.atan2(e.ay - m.y, e.ax - m.x), locked = e.t >= AIM_LOCK;
@@ -6442,7 +6520,7 @@ function drawFisherMarks(sc) {
   const g = game, sw = view.sw, sh = view.sh, cam = g.cam, hw = sw / 2 / sc, hh = sh / 2 / sc;
   const top = insets.t + 138;
   let chip = false;
-  for (const e of g.events) {
+  for (let _i92 = 0, _a92 = g.events, e; _i92 < _a92.length && ((e = _a92[_i92]), true); _i92++) {
     if (e.type === 'boat') {
       if (e.st === 'leave') continue;
       const bx = sw / 2 + (e.x - cam.x) * sc, by = sh / 2 + (20 - cam.y) * sc;
@@ -6483,7 +6561,7 @@ function drawFisherMarks(sc) {
 
 function drawHarpoons(sc) {
   const g = game;
-  for (const h of g.harpoons) {
+  for (let _i93 = 0, _a93 = g.harpoons, h; _i93 < _a93.length && ((h = _a93[_i93]), true); _i93++) {
     const c = Math.cos(h.ang), s = Math.sin(h.ang), L = 44;
     ctx.globalAlpha = h.st === 'fly' ? 1 : clamp(h.t / 0.6, 0, 1);
     if (h.st === 'fly' && h.from && !h.from.done) {    // el cabo del arpón
@@ -6558,7 +6636,7 @@ function render() {
   drawSky(x0, x1, y0, g.t, cam);
   drawRays(x0, x1, y0, g.t);
   ctx.setTransform(db, 0, 0, db, 0, 0); drawMarineSnow(cam, sw, sh, sc, g.t);
-  if (ctx !== mainCtx) {
+  if (bgs < 1) {
     ctx = mainCtx; view.dpr = d;
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = true;
     ctx.drawImage(BGC.cv, 0, 0, cv.width, cv.height);
@@ -6566,17 +6644,17 @@ function render() {
   ctx.setTransform(d * sc, 0, 0, d * sc, (sw / 2 - cam.x * sc + shx) * d, (sh / 2 - cam.y * sc + shy) * d);
   drawSeabed(x0, x1, y1, g.t, sc);
   drawPipes(x0, x1, y0, y1, g.t, sc, false);
-  for (const c of g.chests) if (c.x > x0 - 60 && c.x < x1 + 60 && c.y > y0 - 60 && c.y < y1 + 80) drawWorldChest(c, g.t, sc);
+  for (let _i94 = 0, _a94 = g.chests, c; _i94 < _a94.length && ((c = _a94[_i94]), true); _i94++) if (c.x > x0 - 60 && c.x < x1 + 60 && c.y > y0 - 60 && c.y < y1 + 80) drawWorldChest(c, g.t, sc);
   const P = g.P, live = !g.demo && !P.dead, sch = g.mode === 'school', ref = sch ? g.rep : P;
-  for (const k of g.krill) if (k.x > x0 - 10 && k.x < x1 + 10 && k.y > y0 - 10 && k.y < y1 + 10) drawKrill(k);
-  for (const j of g.jelly) if (j.x > x0 - j.r * 2 && j.x < x1 + j.r * 2 && j.y > y0 - j.r * 2 && j.y < y1 + j.r * 2) { drawJelly(j, live ? (ref.r >= j.r * 2.2 ? '#5ef08a' : '#f7a6e8') : null, sc); if (live) markSeen('medusa'); }
+  for (let _i95 = 0, _a95 = g.krill, k; _i95 < _a95.length && ((k = _a95[_i95]), true); _i95++) if (k.x > x0 - 10 && k.x < x1 + 10 && k.y > y0 - 10 && k.y < y1 + 10) drawKrill(k);
+  for (let _i96 = 0, _a96 = g.jelly, j; _i96 < _a96.length && ((j = _a96[_i96]), true); _i96++) if (j.x > x0 - j.r * 2 && j.x < x1 + j.r * 2 && j.y > y0 - j.r * 2 && j.y < y1 + j.r * 2) { drawJelly(j, live ? (ref.r >= j.r * 2.2 ? '#5ef08a' : '#f7a6e8') : null, sc); if (live) markSeen('medusa'); }
   const vis = g.fish.filter((f) => !f.dead && !f.isP && f.x > x0 - f.r * 3 && f.x < x1 + f.r * 3 && f.y > y0 - f.r * 3 && f.y < y1 + f.r * 3);
   vis.sort((a, b) => b.r - a.r);
   drawFishShadows(vis, g.demo || sch || P.dead ? null : P, sc);
   drawIce(x0, x1, y0, y1, g.t, sc);
   drawTrash(x0, x1, y0, y1, sc);
   if (sch && live) drawSchoolFx(sc);
-  for (const f of vis) {
+  for (let _i97 = 0, _a97 = vis, f; _i97 < _a97.length && ((f = _a97[_i97]), true); _i97++) {
     if (f.member) { drawFish(f, g.t, null, sc); continue; }
     const hunting = sch && f.mode === 'hunt' && f.target && f.target.member;
     drawFish(f, g.t, live && f.hidden <= 0 ? (hunting ? '#ff3b4f' : sch && f.sp === 'sardina' && f.r >= 6 && f.r <= 16 ? '#8fe3ff' : threatColor(ref, f)) : null, sc);
@@ -6592,7 +6670,7 @@ function render() {
     if (!(P.inv > 0 && P.inv < 1 && Math.floor(P.inv * 12) % 2 === 0)) drawFish(P, g.t, null, sc);
   }
   drawGhosts(g.t, sc);
-  for (const sw of g.insects) for (const b of sw.bugs) {
+  for (let _i98 = 0, _a98 = g.insects, sw; _i98 < _a98.length && ((sw = _a98[_i98]), true); _i98++) for (let _i99 = 0, _a99 = sw.bugs, b; _i99 < _a99.length && ((b = _a99[_i99]), true); _i99++) {
     if (b.x === undefined || b.x < x0 - 10 || b.x > x1 + 10 || b.y < y0 - 10 || b.y > y1 + 10) continue;
     const wg = Math.sin(b.ph * 8) > 0 ? 3.2 : 1.6;
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
@@ -6601,16 +6679,16 @@ function render() {
     ctx.fillStyle = '#3a4a2a'; ctx.beginPath(); ctx.ellipse(b.x, b.y, 3, 2, 0, 0, TAU); ctx.fill();
   }
   if (g.gem && !g.gem.got && g.gem.x > x0 - 80 && g.gem.x < x1 + 80 && g.gem.y > y0 - 80 && g.gem.y < y1 + 80) drawGem(g.gem.x, g.gem.y, 14, g.t);
-  for (const b of g.birds) if (b.x > x0 - b.r * 3 && b.x < x1 + b.r * 3 && b.y > y0 - b.r * 4 && b.y < y1 + b.r * 3) { const bo = live ? (sch ? (b.tgt && b.tgt.member && (b.st === 'aim' || b.st === 'dive') ? '#ff3b4f' : '#ffe066') : birdColor(P, b)) : null; if (b.bear) drawBear(b, g.t, bo, sc); else drawBird(b, g.t, bo, sc); if (live) markSeen(b.bear ? 'oso' : 'gaviota'); }
-  for (const e of g.events) if (e.diver) drawDiver(e, g.t, sc);
+  for (let _i100 = 0, _a100 = g.birds, b; _i100 < _a100.length && ((b = _a100[_i100]), true); _i100++) if (b.x > x0 - b.r * 3 && b.x < x1 + b.r * 3 && b.y > y0 - b.r * 4 && b.y < y1 + b.r * 3) { const bo = live ? (sch ? (b.tgt && b.tgt.member && (b.st === 'aim' || b.st === 'dive') ? '#ff3b4f' : '#ffe066') : birdColor(P, b)) : null; if (b.bear) drawBear(b, g.t, bo, sc); else drawBird(b, g.t, bo, sc); if (live) markSeen(b.bear ? 'oso' : 'gaviota'); }
+  for (let _i101 = 0, _a101 = g.events, e; _i101 < _a101.length && ((e = _a101[_i101]), true); _i101++) if (e.diver) drawDiver(e, g.t, sc);
   drawHarpoons(sc);
   drawPipes(x0, x1, y0, y1, g.t, sc, true);
   drawSurfaceLine(x0, x1, y0, y1, g.t, sc);
   drawFloes(x0, x1, y0, y1, g.t, sc);
-  for (const e of g.events) if (e.type === 'boat' && e.x > x0 - 320 && e.x < x1 + 320 && y0 < 60) drawBoat(e, g.t);
+  for (let _i102 = 0, _a102 = g.events, e; _i102 < _a102.length && ((e = _a102[_i102]), true); _i102++) if (e.type === 'boat' && e.x > x0 - 320 && e.x < x1 + 320 && y0 < 60) drawBoat(e, g.t);
   ctx.setTransform(d, 0, 0, d, 0, 0); drawForeground(cam, sw, sh, sc, g.t);   // primer plano desenfocado
   ctx.setTransform(d * sc, 0, 0, d * sc, (sw / 2 - cam.x * sc + shx) * d, (sh / 2 - cam.y * sc + shy) * d);
-  for (const r of g.rings) {
+  for (let _i103 = 0, _a103 = g.rings, r; _i103 < _a103.length && ((r = _a103[_i103]), true); _i103++) {
     const k = r.t / 0.5, rad = r.r + (r.max - r.r) * k;
     ctx.globalAlpha = 1 - k; ctx.strokeStyle = r.col; ctx.lineWidth = Math.max(2 / sc, r.max * 0.05 * (1 - k));
     ctx.beginPath();
@@ -6629,7 +6707,7 @@ function render() {
   }
   drawParts(g.parts);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  for (const x of g.texts) {                              // aparecen al 130 % y se asientan en 120 ms
+  for (let _i104 = 0, _a104 = g.texts, x; _i104 < _a104.length && ((x = _a104[_i104]), true); _i104++) {                              // aparecen al 130 % y se asientan en 120 ms
     const pop = x.t < 0.12 ? 1.3 - 0.3 * easeO(x.t / 0.12) : 1;
     ctx.globalAlpha = clamp(1.5 - x.t, 0, 1);
     otext(x.txt, x.x, x.y - x.t * 40 / sc, 22 * x.size * pop / sc, x.col, 700);
@@ -6731,6 +6809,7 @@ function startGame() {
   persist();
   newGame(sch ? 'sardina' : save.sel, false, used, sch ? 'school' : 'classic');
   GM.n = 0; GM.sum = 0; GM.work = 0; GM.done = false;
+  try { if (GFX.fg) { fgSprite('kelp'); fgSprite('rock'); if (MAPK === 'templado') fgSprite('coral'); } } catch (e) {}   // el desenfoque se prepara ahora
   mode = 'play'; resetInput(); showScreen(null);
   last = performance.now();
 }
@@ -7510,7 +7589,7 @@ function showResult() {
   if (g.st.dodge) line('🎯 Arpones esquivados: ' + g.st.dodge);
   if (sch && g.st.lost) line('🐟 Sardinas perdidas por el camino: ' + g.st.lost);
   if (g.hardDone) line((DIAMONDS ? '💎' : '🏆') + ' Misión difícil: ' + g.hardDone + (DIAMONDS ? ' (+' + HARD_GEMS + ' diamantes)' : ' (+' + HARD_PEARLS + ' perlas)'));
-  for (const d of g.mDone) line('✓ ' + d.txt + ' (+' + d.rw + ' perlas)');
+  for (let _i105 = 0, _a105 = g.mDone, d; _i105 < _a105.length && ((d = _a105[_i105]), true); _i105++) line('✓ ' + d.txt + ' (+' + d.rw + ' perlas)');
   rm.hidden = !rm.children.length;
   const next = ORDER.find((k) => !save.unlocked.includes(k));
   const un = $('rUnlock');
@@ -7841,6 +7920,7 @@ function frame(now) {
   if (dt > 0.05) dt = 0.05;
   gtime += dt;
   const w0 = performance.now();
+  try { drsApply(); } catch (err) { console.error(err); }
   try {
     if (game && (mode === 'play' || (mode !== 'pause' && game.demo))) {
       if (mode === 'play' && game.hs > 0) game.hs -= dt;   // parada de impacto: el mundo se congela un instante
@@ -7859,7 +7939,7 @@ document.querySelectorAll('.gemonly').forEach((el) => { el.hidden = !DIAMONDS; }
 resize();
 newGame(save.sel, true);
 showScreen('menu');
-try { if (document.fonts && document.fonts.load) document.fonts.load('700 20px "Fredoka"').then(() => refreshMenu()).catch(() => {}); } catch (e) {}
+try { if (document.fonts && document.fonts.load) document.fonts.load('700 20px "Fredoka"').then(() => { TXT.map.clear(); refreshMenu(); }).catch(() => {}); } catch (e) {}
 
 // ================= Logo: «Arena» de arena =================
 function sandWord(F) {

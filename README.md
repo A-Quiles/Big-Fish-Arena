@@ -70,6 +70,10 @@ Se eligen en el menú con el botón del mar (debajo de «Jugar»). Cada uno tien
 - Resolución dinámica: en cualquier calidad, si los fotogramas van lentos el lienzo baja un poco de resolución (como mucho hasta el 72–80 %) y la recupera cuando va holgado. Así no se notan tirones.
 - El fondo lejano (agua, relieve del fondo, cielo, rayos de luz y nieve marina) se pinta a menos resolución y se escala: es lo que más píxeles movía.
 - En pausa y en la pantalla de resultados el mar se pinta una sola vez.
+- Los cambios de resolución se aplican al empezar un fotograma, antes de pintarlo (antes, el fotograma de ese momento salía en blanco y la pantalla parpadeaba). La resolución no se mide en los 2 primeros segundos de cada partida y, si tuvo que bajar, tarda 20 s en volver a intentar ese nivel.
+- Sin `ctx.filter` durante la partida (en el móvil es lentísimo): el destello del buceador al recibir un mordisco es un brillo aditivo.
+- Todos los peces nacen con las mismas propiedades y en el mismo orden, y los bucles de las listas del juego usan índices: el motor de JavaScript no desoptimiza el código a cada rato y se genera mucha menos basura de memoria (de ~200 a ~70 KB por fotograma).
+- Nieve marina, partículas, burbujas y krill se pintan con pequeñas imágenes ya hechas; los textos con contorno del marcador se guardan como imagen; el primer plano desenfocado se prepara al empezar la partida.
 
 ## Botones y mapa
 
