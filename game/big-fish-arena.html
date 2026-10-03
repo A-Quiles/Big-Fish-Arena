@@ -2107,30 +2107,10 @@ const GFXL = [
 const GFX_OPTS = ['auto', 'alta', 'media', 'baja'];
 function gfxLevel() { const i = GFX_OPTS.indexOf(save.gfx); return i > 0 ? i - 1 : clamp(save.gfxAuto | 0, 0, 2); }
 let GFX = GFXL[gfxLevel()];
-function gfxApply() { const G = GFXL[gfxLevel()]; if (G !== GFX) { GFX = G; DRS.k = 1; DRS.want = 1; sprClear(); resize(); } }
-// durante la partida, el cambio de calidad espera al principio del siguiente fotograma (si no, ese sale en blanco)
-function gfxApplyLater() { DRS.gfx = true; }
-// Resolución dinámica: mide el tiempo entre fotogramas mientras se juega. Si va lento, baja la resolución del lienzo
-// un 8 % (hasta GFX.dmin); si va holgado varios segundos seguidos, la vuelve a subir. Así no se notan tirones.
-const DRS = { k: 1, want: 1, gfx: false, n: 0, sum: 0, best: 1, ok: 0, at: 0 };
-function drsTick(raw) {
-  if (DRS.lock || !(raw > 0) || raw > 0.25 || !game || game.t < 2) return;
-  DRS.n++; DRS.sum += raw; DRS.best = Math.min(DRS.best, raw);
-  if (DRS.n < 45) return;
-  const avg = DRS.sum / DRS.n, base = Math.max(1 / 125, Math.min(1 / 60, DRS.best * 1.05));   // 60, 90 o 120 Hz
-  DRS.n = 0; DRS.sum = 0; DRS.best = 1;
-  let k = DRS.k;
-  const now = performance.now();
-  if (avg > base * 1.3) { if (k > GFX.dmin) { DRS.cap = k; DRS.capT = now + 20000; } k = Math.max(GFX.dmin, k - 0.08); DRS.ok = 0; }
-  else if (avg < base * 1.08) { if (++DRS.ok >= 4) { k = Math.min(now < (DRS.capT || 0) ? Math.max(k, DRS.cap - 0.04) : 1, k + 0.05); DRS.ok = 0; } }
-  else DRS.ok = 0;
-  if (Math.abs(k - DRS.want) > 0.001) DRS.want = k;   // se aplica al empezar el siguiente fotograma
-}
-function drsApply() {
-  if (DRS.resz) { DRS.resz = false; resize(); }
-  if (DRS.gfx) { DRS.gfx = false; gfxApply(); return; }
-  if (Math.abs(DRS.want - DRS.k) > 0.001) { DRS.k = DRS.want; resizeCanvas(); }
-}
+function gfxApply() { const G = GFXL[gfxLevel()]; if (G !== GFX) { GFX = G; sprClear(); resize(); } }
+// Cambios de tamaño de la ventana: se aplican al empezar el fotograma, antes de pintarlo (así nunca sale uno en blanco).
+const DRS = { resz: false };
+function drsApply() { if (DRS.resz) { DRS.resz = false; resize(); } }
 // Medición en «Auto»: de los 2 a los 12 s de partida. Si va a menos de ~46 fps, baja un nivel (o dos si va muy mal);
 // si va sobrado, prueba a subir uno en la siguiente partida.
 const GM = { n: 0, sum: 0, work: 0, done: false };
@@ -2144,7 +2124,7 @@ function gfxMeasure(dt, work) {
   let nq = q;
   if (avg > 0.0215) nq = Math.min(2, q + (avg > 0.03 ? 2 : 1));
   else if (avg < 0.0175 && wk < 6 && q > 0) nq = q - 1;
-  if (nq !== q) { save.gfxAuto = nq; persist(); if (nq > q) gfxApplyLater(); }
+  if (nq !== q) { save.gfxAuto = nq; persist(); }      // se aplica al empezar la siguiente partida
 }
 // Parada de impacto (congela el juego unas centésimas) y empujón de cámara
 function hitStop(sec) { const g = game; if (!g || g.demo || (g.hsCD || 0) > 0) return; g.hs = Math.max(g.hs || 0, sec); g.hsCD = 0.2; }
@@ -2188,7 +2168,7 @@ function readInsets() {
 }
 function resizeCanvas() {                               // solo el tamaño del lienzo (la resolución dinámica)
   const sw = Math.max(1, window.innerWidth || 1), sh = Math.max(1, window.innerHeight || 1);
-  const dpr = Math.max(0.75, Math.min(window.devicePixelRatio || 1, GFX.dpr) * DRS.k);
+  const dpr = Math.max(0.75, Math.min(window.devicePixelRatio || 1, GFX.dpr));
   const W = Math.round(sw * dpr), H = Math.round(sh * dpr);
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
   view.sw = sw; view.sh = sh; view.dpr = dpr; REND.still = false;
@@ -2433,7 +2413,7 @@ function makeFish(sp, r, x, y, isP) {
   for (let _i18 = 0, _a18 = TIMERS, k; _i18 < _a18.length && ((k = _a18[_i18]), true); _i18++) f[k] = 0;
   // el resto de propiedades que se usan más tarde, ya desde el principio y siempre en el mismo orden
   f.biteAt = -9; f.dashAt = -9; f.eatAt = -9; f.lvlAt = -9; f._fs = 0; f._ft = -99; f._fx = 0; f._bq = 0;
-  f._sE = null; f._sK = ''; f._sM = 0; f._sX = ''; f._sL = 0;
+  f._sE = null; f._sK = ''; f._sM = 0; f._sX = ''; f._sL = 0; f._eC = -1; f._eL = ''; f._eI = ''; f._eS = null;
   f.member = false; f.ox = 0; f.oy = 0; f.ph = 0; f.wdir = 0; f.strand = 0; f.strandFl = null; f.hop = 0; f.fxT = 0;
   f.hpMax = hpMaxOf(f); f.hp = f.hpMax; f.wa = f.ang;
   return f;
@@ -2650,23 +2630,29 @@ function newGame(sp, demo, boosts, gmode) {
 
 // ---------- Efectos ----------
 const PARTS_MAX = 320;
+const PPOOL = [];                                         // reserva de partículas para reutilizar
+function mkPart(x, y, vx, vy, life, max, col, r, g, drag, grow) {
+  const p = PPOOL.length ? PPOOL.pop() : { x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, col: '', r: 0, g: 0, drag: 0, grow: 0 };
+  p.x = x; p.y = y; p.vx = vx; p.vy = vy; p.life = life; p.max = max; p.col = col; p.r = r; p.g = g; p.drag = drag; p.grow = grow;
+  return p;
+}
 function puff(x, y, col, n, spd, size) {
   const p = game.parts;
   if (p.length > PARTS_MAX) n = Math.min(n, 1);
   for (let i = 0; i < n; i++) {
     const a = rand(0, TAU), s = rand(spd * 0.3, spd);
-    p.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rand(0.35, 0.7), max: 0.7, col, r: rand(0.6, 1.2) * size, g: 0, drag: 2.5 });
+    p.push(mkPart(x, y, Math.cos(a) * s, Math.sin(a) * s, rand(0.35, 0.7), 0.7, col, rand(0.6, 1.2) * size, 0, 2.5, 0));
   }
 }
 function bubbles(x, y, n, size) {
   const p = game.parts;
   if (p.length > PARTS_MAX) n = Math.min(n, 1);
-  for (let i = 0; i < n; i++) p.push({ x: x + rand(-size, size), y: y + rand(-size, size), vx: rand(-20, 20), vy: rand(-90, -40) * (size / 8 + 0.5), life: rand(0.6, 1.1), max: 1.1, col: 'bub', r: rand(0.25, 0.55) * size, g: -30, drag: 1 });
+  for (let i = 0; i < n; i++) p.push(mkPart(x + rand(-size, size), y + rand(-size, size), rand(-20, 20), rand(-90, -40) * (size / 8 + 0.5), rand(0.6, 1.1), 1.1, 'bub', rand(0.25, 0.55) * size, -30, 1, 0));
 }
 function splashFx(x, strength, size) {
   const g = game, n = clamp(Math.round(strength / 35), 4, 26);
   for (let i = 0; i < n; i++) {
-    g.parts.push({ x: x + rand(-1, 1) * size, y: -2, vx: rand(-1, 1) * strength * 0.35, vy: -rand(0.35, 1) * strength * 0.75, life: rand(0.5, 0.95), max: 0.95, col: '#effcff', r: rand(0.14, 0.3) * size + 1, g: 950, drag: 0.4 });
+    g.parts.push(mkPart(x + rand(-1, 1) * size, -2, rand(-1, 1) * strength * 0.35, -rand(0.35, 1) * strength * 0.75, rand(0.5, 0.95), 0.95, '#effcff', rand(0.14, 0.3) * size + 1, 950, 0.4, 0));
   }
   g.rings.push({ x, y: 0, r: size * 0.6, max: size * 3.4, t: 0, col: '#effcff', flat: true });
 }
@@ -3118,7 +3104,7 @@ function doInk(A) {
   const g = game, R = A.r * 6 + 90;
   for (let i = 0; i < 26; i++) {
     const a = rand(0, TAU), s = rand(20, 150);
-    g.parts.push({ x: A.x, y: A.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rand(1.6, 2.6), max: 2.6, col: 'ink', r: A.r * rand(0.7, 1.4), g: 0, drag: 2.2, grow: A.r * 1.6 });
+    g.parts.push(mkPart(A.x, A.y, Math.cos(a) * s, Math.sin(a) * s, rand(1.6, 2.6), 2.6, 'ink', A.r * rand(0.7, 1.4), 0, 2.2, A.r * 1.6));
   }
   for (let _i36 = 0, _a36 = g.fish, T; _i36 < _a36.length && ((T = _a36[_i36]), true); _i36++) {
     if (T === A || T.dead || d2(A.x, A.y, T.x, T.y) > R * R) continue;
@@ -3402,7 +3388,7 @@ function bellyFlop(P, vy) {
 // ================= Actualización =================
 function timers(f, dt) {
   f.biteT -= dt; f.biteWin -= dt; f.mouth -= dt; f.abT -= dt; f.leapCD -= dt;
-  for (let _i42 = 0, _a42 = TIMERS, k; _i42 < _a42.length && ((k = _a42[_i42]), true); _i42++) if (f[k] > 0) f[k] -= dt;
+  if (f.stun > 0) f.stun -= dt; if (f.flash > 0) f.flash -= dt; if (f.inv > 0) f.inv -= dt; if (f.dash > 0) f.dash -= dt; if (f.inflate > 0) f.inflate -= dt; if (f.frenzy > 0) f.frenzy -= dt; if (f.charge > 0) f.charge -= dt; if (f.power > 0) f.power -= dt; if (f.stingT > 0) f.stingT -= dt; if (f.hidden > 0) f.hidden -= dt; if (f.blind > 0) f.blind -= dt; if (f.glide > 0) f.glide -= dt; if (f.ambush > 0) f.ambush -= dt; if (f.lure > 0) f.lure -= dt; if (f.slowT > 0) f.slowT -= dt; if (f.shield > 0) f.shield -= dt; if (f.warnT > 0) f.warnT -= dt; if (f.burstT > 0) f.burstT -= dt; if (f.fearT > 0) f.fearT -= dt; if (f.launch > 0) f.launch -= dt;
 }
 
 function specials(f, dt) {
@@ -3507,7 +3493,7 @@ function updBoat(e, dt) {
     if (e.wake <= 0) {
       e.wake = 0.07;
       const sx = e.x - e.dir * 130;
-      g.parts.push({ x: sx + rand(-10, 10), y: -3, vx: -e.dir * rand(20, 90), vy: -rand(20, 110), life: rand(0.35, 0.7), max: 0.7, col: '#effcff', r: rand(2.5, 6), g: 520, drag: 1.2 });
+      g.parts.push(mkPart(sx + rand(-10, 10), -3, -e.dir * rand(20, 90), -rand(20, 110), rand(0.35, 0.7), 0.7, '#effcff', rand(2.5, 6), 520, 1.2, 0));
     }
   }
 }
@@ -3866,7 +3852,7 @@ function updateSchool(dt) {
   // 8) Racha larga: el banco deja chispas
   if (g.combo >= 4 && g.comboT > 0 && Math.random() < dt * 26) {
     const m = M[Math.floor(Math.random() * M.length)];
-    if (m && !m.dead) g.parts.push({ x: m.x - Math.cos(m.ang) * m.r, y: m.y - Math.sin(m.ang) * m.r, vx: rand(-20, 20), vy: rand(-20, 20), life: 0.55, max: 0.55, col: g.combo >= 6 ? '#ff9fe8' : '#ffc07a', r: 2.2, g: 0, drag: 1.5 });
+    if (m && !m.dead) g.parts.push(mkPart(m.x - Math.cos(m.ang) * m.r, m.y - Math.sin(m.ang) * m.r, rand(-20, 20), rand(-20, 20), 0.55, 0.55, g.combo >= 6 ? '#ff9fe8' : '#ffc07a', 2.2, 0, 1.5, 0));
   }
 }
 
@@ -3890,7 +3876,7 @@ function updatePlayer(P, dt) {
     if (P.fxT <= 0) {
       P.fxT = 0.06;
       const tx = P.x - Math.cos(P.ang) * P.r * 0.9 + rand(-0.35, 0.35) * P.r, ty = P.y - Math.sin(P.ang) * P.r * 0.9 + rand(-0.35, 0.35) * P.r;
-      game.parts.push({ x: tx, y: ty, vx: rand(-15, 15), vy: PS.fx === 'embers' || PS.fx === 'toxic' ? rand(-60, -25) : rand(-15, 15), life: 0.8, max: 0.8, col: pick(FXC[PS.fx]), r: Math.max(1.5, P.r * 0.13), g: 0, drag: 1 });
+      game.parts.push(mkPart(tx, ty, rand(-15, 15), PS.fx === 'embers' || PS.fx === 'toxic' ? rand(-60, -25) : rand(-15, 15), 0.8, 0.8, pick(FXC[PS.fx]), Math.max(1.5, P.r * 0.13), 0, 1, 0));
     }
   }
   if (P.air) P.thr = 0;
@@ -3902,7 +3888,7 @@ function updatePlayer(P, dt) {
   if (!P.air && P.thr > 0.8 && Math.hypot(P.vx, P.vy) > speedOf(P) * 0.9 && Math.random() < dt * 6) bubbles(P.x - Math.cos(P.ang) * P.r, P.y - Math.sin(P.ang) * P.r, 1, P.r * 0.25);
   const g = game;
   if (g.combo >= 4 && g.comboT > 0 && Math.random() < dt * 24) {
-    g.parts.push({ x: P.x - Math.cos(P.ang) * P.r * 0.9 + rand(-0.3, 0.3) * P.r, y: P.y - Math.sin(P.ang) * P.r * 0.9 + rand(-0.3, 0.3) * P.r, vx: rand(-20, 20) - Math.cos(P.ang) * 30, vy: rand(-20, 20) - Math.sin(P.ang) * 30, life: 0.6, max: 0.6, col: g.combo >= 6 ? '#ff9fe8' : '#ffc07a', r: Math.max(1.4, P.r * 0.12), g: 0, drag: 1.5 });
+    g.parts.push(mkPart(P.x - Math.cos(P.ang) * P.r * 0.9 + rand(-0.3, 0.3) * P.r, P.y - Math.sin(P.ang) * P.r * 0.9 + rand(-0.3, 0.3) * P.r, rand(-20, 20) - Math.cos(P.ang) * 30, rand(-20, 20) - Math.sin(P.ang) * 30, 0.6, 0.6, g.combo >= 6 ? '#ff9fe8' : '#ffc07a', Math.max(1.4, P.r * 0.12), 0, 1.5, 0));
   }
 }
 
@@ -4053,6 +4039,8 @@ function finishRun(g) {
   }
 }
 
+function keepIf(a, f) { let j = 0; for (let i = 0; i < a.length; i++) { const v = a[i]; if (f(v)) a[j++] = v; } a.length = j; return a; }
+const KEEP = { fish: (f) => !f.dead || f.isP, part: (p) => (p.life > 0 ? true : (PPOOL.length < 600 && PPOOL.push(p), false)), text: (x) => x.t < 1.4, ring: (r) => r.t < 0.5 };
 function update(dt) {
   const g = game, P = g.P, rdt = dt;
   if (g.over) {
@@ -4069,7 +4057,7 @@ function update(dt) {
   else if (!P.dead) updatePlayer(P, dt);
   // Datos compartidos del frame
   g.zoneP = zoneOf(P.x, P.y);
-  g.lurers = g.fish.filter((f) => !f.dead && f.lure > 0);
+  const LU = g.lurers; LU.length = 0; for (let i = 0, F = g.fish; i < F.length; i++) { const f = F[i]; if (!f.dead && f.lure > 0) LU.push(f); }
   let hp = 0, hs = 0, dF = null, dD = Infinity;
   for (let _i72 = 0, _a72 = g.fish, f; _i72 < _a72.length && ((f = _a72[_i72]), true); _i72++) {
     if (f.isP || f.dead || f.mode !== 'hunt' || !f.target) continue;
@@ -4092,7 +4080,7 @@ function update(dt) {
     biteCheck(f);
     if (!f.dead) specials(f, dt);
   }
-  g.fish = g.fish.filter((f) => !f.dead || f.isP);
+  keepIf(g.fish, KEEP.fish);
   if (!g.demo) updBirds(dt);
   updateWorld(dt);
   updEvents(dt);
@@ -4113,12 +4101,12 @@ function update(dt) {
   }
   if (g.toasts.length) { const q = g.toasts[0]; q.t += dt; if (q.t > q.dur) g.toasts.shift(); }
   for (let _i76 = 0, _a76 = g.parts, p; _i76 < _a76.length && ((p = _a76[_i76]), true); _i76++) { p.vx *= Math.max(0, 1 - p.drag * dt); p.vy *= Math.max(0, 1 - p.drag * dt); p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; }
-  g.parts = g.parts.filter((p) => p.life > 0);
+  keepIf(g.parts, KEEP.part);
   if (g.parts.length > 600) g.parts.splice(0, g.parts.length - 600);
   for (let _i77 = 0, _a77 = g.texts, x; _i77 < _a77.length && ((x = _a77[_i77]), true); _i77++) x.t += dt;
-  g.texts = g.texts.filter((x) => x.t < 1.4);
+  keepIf(g.texts, KEEP.text);
   for (let _i78 = 0, _a78 = g.rings, r; _i78 < _a78.length && ((r = _a78[_i78]), true); _i78++) r.t += dt;
-  g.rings = g.rings.filter((r) => r.t < 0.5);
+  keepIf(g.rings, KEEP.ring);
   const cam = g.cam;
   cam.view += (viewFor(P.r) * (g.mode === 'school' ? 0.88 : 1) - cam.view) * Math.min(1, dt * 1.5);
   const lx = P.x + P.vx * 0.3;
@@ -4901,34 +4889,42 @@ function drawPat(pat, shape) {                            // en coordenadas del 
   try { fn(b); } catch (e) {}
   ctx.restore();
 }
-function sprBuild(shape, C, mq, ext, lv) {
+// Horneado por pasos: cada «yield» es un punto donde se puede parar hasta el fotograma siguiente.
+function* sprBuildGen(shape, C, mq, ext, lv, pat) {
   const B = BOUNDS[shape], th = clamp(0.95 * lv, 1.3, 5.5), mU = th / lv + 1.2;
   const x0 = B[0] - mU, y0 = B[2] - mU;
   const W = Math.max(4, Math.ceil((B[1] - B[0] + 2 * mU) * lv)), H = Math.max(4, Math.ceil((B[3] - B[2] + 2 * mU) * lv));
-  POSE.inflate = ext === 'inf' ? 1 : 0; POSE.air = ext === 'open';
-  SHP.eye = null; SHP.scl = !!SCL[shape]; SHP.det = lv < 1.5 ? 1 : GFX.det;   // pez diminuto: sin escamas ni radios
+  const pose = () => { POSE.inflate = ext === 'inf' ? 1 : 0; POSE.air = ext === 'open'; SHP.scl = !!SCL[shape]; SHP.det = lv < 1.5 ? 1 : GFX.det; };
   // 1) silueta exacta (lo semitransparente se vuelve opaco)
+  pose(); SHP.eye = null;
   const mk = sprTmp(0, W, H), mx = mk.getContext('2d');
   shapeOn(mx, 1, lv, -x0, -y0, () => SHAPES[shape](MASKC, 0, mq, POSE, 0));
+  const eye = SHP.eye || [0, 0, 0];
   mx.drawImage(mk, 0, 0, W, H, 0, 0, W, H); mx.drawImage(mk, 0, 0, W, H, 0, 0, W, H);
+  yield;
   // 2) contorno grueso: silueta engordada menos la silueta encogida 1 px (así no queda rendija)
   const cv2 = document.createElement('canvas'); cv2.width = W; cv2.height = H;
   const ox = cv2.getContext('2d');
-  const n = th > 3 ? 16 : 10;
-  for (let i = 0; i < n; i++) { const a = i / n * TAU; ox.drawImage(mk, 0, 0, W, H, Math.cos(a) * th, Math.sin(a) * th, W, H); }
-  if (th > 2.4) for (let i = 0; i < 8; i++) { const a = (i + 0.5) / 8 * TAU; ox.drawImage(mk, 0, 0, W, H, Math.cos(a) * th * 0.55, Math.sin(a) * th * 0.55, W, H); }
+  const n = th > 3 ? 16 : 10, tanda = Math.max(2, Math.floor(8e5 / (W * H)));   // pasadas por tanda según el tamaño
+  let pc = 0;
+  for (let i = 0; i < n; i++) { const a = i / n * TAU; ox.drawImage(mk, 0, 0, W, H, Math.cos(a) * th, Math.sin(a) * th, W, H); if (++pc >= tanda) { pc = 0; yield; } }
+  if (th > 2.4) for (let i = 0; i < 8; i++) { const a = (i + 0.5) / 8 * TAU; ox.drawImage(mk, 0, 0, W, H, Math.cos(a) * th * 0.55, Math.sin(a) * th * 0.55, W, H); if (++pc >= tanda) { pc = 0; yield; } }
   ox.globalCompositeOperation = 'source-in'; ox.fillStyle = OUT; ox.fillRect(0, 0, W, H);
+  yield; pc = 0;
   // la silueta incluye el medio trazo exterior, que en el sprite es semitransparente: el contorno entra por debajo
   const er = sprTmp(2, W, H), ex = er.getContext('2d'), eo = Math.max(1, 0.45 * lv + 0.5);
   ex.drawImage(mk, 0, 0, W, H, 0, 0, W, H);
   ex.globalCompositeOperation = 'destination-in';
-  for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; ex.drawImage(mk, 0, 0, W, H, Math.cos(a) * eo, Math.sin(a) * eo, W, H); }
+  for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; ex.drawImage(mk, 0, 0, W, H, Math.cos(a) * eo, Math.sin(a) * eo, W, H); if (++pc >= tanda) { pc = 0; yield; } }
   ox.globalCompositeOperation = 'destination-out'; ox.drawImage(er, 0, 0, W, H, 0, 0, W, H);
   ox.globalCompositeOperation = 'source-over';
+  yield;
   // 3) color
+  pose(); SHP.eye = null;
   const cl = sprTmp(1, W, H), cx = cl.getContext('2d');
   shapeOn(cx, 2, lv, -x0, -y0, () => SHAPES[shape](C, 0, mq, POSE, 0));
-  if (SHP.pat) { cx.globalCompositeOperation = 'source-atop'; const pt = SHP.pat; shapeOn(cx, 2, lv, -x0, -y0, () => drawPat(pt, shape)); cx.globalCompositeOperation = 'source-over'; }
+  if (pat) { cx.globalCompositeOperation = 'source-atop'; shapeOn(cx, 2, lv, -x0, -y0, () => drawPat(pat, shape)); cx.globalCompositeOperation = 'source-over'; }
+  yield;
   // 4) luz: de arriba (claro) a abajo (sombra), brillo alargado en el lomo, luz de contorno y sombra de contorno
   cx.globalCompositeOperation = 'source-atop';
   const bd = BODY[shape], ry = bd[2];
@@ -4944,6 +4940,7 @@ function sprBuild(shape, C, mq, ext, lv) {
   bx.drawImage(mk, 0, 0, W, H, 0, 0, W, H); bx.globalCompositeOperation = 'source-in'; bx.fillStyle = 'rgba(230,252,255,0.72)'; bx.fillRect(0, 0, W, H);
   bx.globalCompositeOperation = 'destination-out'; bx.drawImage(mk, 0, 0, W, H, 0, rp, W, H);
   cx.drawImage(bn, 0, 0, W, H, 0, 0, W, H);
+  yield;
   bn = sprTmp(3, W, H); bx = bn.getContext('2d');
   bx.drawImage(mk, 0, 0, W, H, 0, 0, W, H); bx.globalCompositeOperation = 'source-in'; bx.fillStyle = 'rgba(4,16,36,0.34)'; bx.fillRect(0, 0, W, H);
   bx.globalCompositeOperation = 'destination-out'; bx.drawImage(mk, 0, 0, W, H, 0, -rp * 1.3, W, H);
@@ -4951,25 +4948,64 @@ function sprBuild(shape, C, mq, ext, lv) {
   cx.globalCompositeOperation = 'source-over';
   // 5) todo junto: contorno + color
   ox.drawImage(cl, 0, 0, W, H, 0, 0, W, H);
-  return { cv: cv2, W, H, x0, y0, lv, eye: SHP.eye || [0, 0, 0], last: 0 };
+  return { cv: cv2, W, H, x0, y0, lv, eye, last: 0 };
 }
+// Cola de horneado: un trabajo a la vez (los lienzos de trabajo son compartidos)
+SPR.q = []; SPR.qk = new Set(); SPR.boostT = 0;
+function sprStore(key, base, E) {
+  E.last = SPR.frame; SPR.map.set(key, E); SPR.alt.set(base, E); SPR.px += E.W * E.H;
+  if (SPR.px > SPR.max) sprTrim();
+}
+function sprStep(J) {                                     // un paso del trabajo J; true si ha terminado
+  let r;
+  try { r = J.gen.next(); } catch (err) { r = { done: true, value: null }; }
+  if (!r.done) return false;
+  SPR.q.shift(); SPR.qk.delete(J.key);
+  if (r.value) sprStore(J.key, J.base, r.value);
+  return true;
+}
+function sprWork(budget) {                                // trabajo repartido: como mucho «budget» ms por fotograma
+  if (!SPR.q.length) return;
+  const t0 = performance.now();
+  while (SPR.q.length) {
+    sprStep(SPR.q[0]);
+    if (performance.now() - t0 >= budget) break;
+  }
+  const dt = performance.now() - t0; SPR.bt += dt;
+}
+function sprDrain() { while (SPR.q.length) sprStep(SPR.q[0]); }   // termina lo pendiente (antes de un horneado inmediato)
 function sprFor(shape, C, ck, mq, ext, need) {
   const lv = sprLv(need), base = shape + '|' + ck + '|' + mq + '|' + ext, key = base + '|' + lv;
   let E = SPR.map.get(key);
   if (E) { E.last = SPR.frame; return E; }
-  if (SPR.free || SPR.spent < GFX.budget) {              // tiempo máximo por fotograma para hornear
-    const t0 = performance.now();
-    try { E = sprBuild(shape, C, mq, ext, lv); } catch (err) { E = null; }
-    const dtb = performance.now() - t0; SPR.spent += dtb; SPR.bt += dtb; SPR.bn++;
-    if (E) {
-      E.last = SPR.frame; SPR.map.set(key, E); SPR.alt.set(base, E); SPR.px += E.W * E.H;
-      if (SPR.px > SPR.max) sprTrim();
-      return E;
-    }
+  if (SPR.free) {                                         // vistas previas de los menús: de una vez
+    sprDrain();
+    E = SPR.map.get(key);
+    if (E) { E.last = SPR.frame; return E; }
+    const gen = sprBuildGen(shape, C, mq, ext, lv, SHP.pat);
+    let r; try { do { r = gen.next(); } while (!r.done); } catch (err) { r = { value: null }; }
+    SPR.bn++;
+    if (r.value) { sprStore(key, base, r.value); return r.value; }
+    return null;
+  }
+  if (!SPR.qk.has(key)) {                                 // a la cola; se termina en los próximos fotogramas
+    if (SPR.q.length > 60) { const J = SPR.q.splice(1, 1)[0]; if (J) SPR.qk.delete(J.key); }
+    const J = { key, base, gen: sprBuildGen(shape, C, mq, ext, lv, SHP.pat) };
+    SPR.qk.add(key); SPR.bn++;
+    if (!SPR.alt.has(base) && SPR.q.length > 1) SPR.q.splice(1, 0, J); else SPR.q.push(J);   // los que no tienen ninguna versión, antes
   }
   E = SPR.alt.get(base);                                  // mientras tanto, el mismo pez a otra resolución
+  if (!(E && E.cv.width) && (mq || ext)) E = SPR.alt.get(shape + '|' + ck + '|0|' + ext) || SPR.alt.get(shape + '|' + ck + '|0|');   // o con la boca cerrada
   if (E && E.cv.width) { E.last = SPR.frame; return E; }
   return null;
+}
+function sprWant(f) {                                     // pedir por adelantado el dibujo de un pez que se acerca
+  const s = SP[f.sp];
+  if (LIVE[s.shape]) return;
+  const C = fishCol(f, s, game ? game.t : 0), ck = FC_K;
+  SHP.pat = (f.skin && SKINS[f.skin] && SKINS[f.skin].pat) || null;
+  sprFor(s.shape, C, ck, 0, '', DRAW_PPU * f.r / 10);
+  SHP.pat = null;
 }
 function sprTrim() {
   const L = [...SPR.map.entries()].sort((a, b) => a[1].last - b[1].last);
@@ -4979,7 +5015,7 @@ function sprTrim() {
     SPR.map.delete(k); SPR.px -= E.W * E.H; E.cv.width = E.cv.height = 0;
   }
 }
-function sprClear() { for (const E of SPR.map.values()) E.cv.width = E.cv.height = 0; SPR.map.clear(); SPR.alt.clear(); SPR.px = 0; }
+function sprClear() { for (const E of SPR.map.values()) E.cv.width = E.cv.height = 0; SPR.map.clear(); SPR.alt.clear(); SPR.px = 0; SPR.q.length = 0; SPR.qk.clear(); }
 const GLOWC = new Map();
 function glowSpr(rgb) {                                   // halo suave horneado una vez por color
   let c = GLOWC.get(rgb);
@@ -5174,6 +5210,63 @@ function turnFx(f, want, t) {
   const v = -f._fs * Math.cos(Math.PI * u);
   return Math.sign(v) * Math.sqrt(Math.abs(v));            // pasa rápido por el canto: no se ve «de papel»
 }
+// Camino rápido en el mundo: la matriz de la cámara (escala uniforme) y la del pez actual, aplicada solo cuando hace falta.
+const CAMM = { on: false, s: 1, e: 0, f: 0 };
+const FM = [1, 0, 0, 1, 0, 0];
+let FMP = false;                                          // la matriz FM aún no está puesta en el lienzo
+function fmUse() { if (FMP) { ctx.setTransform(FM[0], FM[1], FM[2], FM[3], FM[4], FM[5]); FMP = false; } }
+function fmRot(w) {                                       // FM × giro(w)
+  const c = Math.cos(w), s = Math.sin(w), a = FM[0], b = FM[1];
+  FM[0] = a * c + FM[2] * s; FM[1] = b * c + FM[3] * s; FM[2] = -a * s + FM[2] * c; FM[3] = -b * s + FM[3] * c; FMP = true;
+}
+function drawSlicesM(E, n) {                              // como drawSlices, con una matriz por tira (sin deshacer)
+  const iw = 1 / E.lv, span = E.W * iw;
+  fmUse();
+  if (n <= 1) { ctx.drawImage(E.cv, 0, 0, E.W, E.H, E.x0, E.y0, span, E.H * iw); return; }
+  const seg = span / n, a = FM[0], b = FM[1], c = FM[2], d = FM[3], e = FM[4], f = FM[5];
+  let xa = E.x0, ya = waveY(clamp((WV.hx - xa) / WV.L, 0, 1.1));
+  for (let i = 0; i < n; i++) {
+    const xb = xa + seg, yb = waveY(clamp((WV.hx - xb) / WV.L, 0, 1.1)), k = (yb - ya) / seg;
+    const p0 = Math.max(0, Math.floor(i * seg * E.lv) - (i ? 1 : 0)), p1 = Math.min(E.W, Math.ceil((i + 1) * seg * E.lv));
+    if (p1 > p0) {
+      const f0 = ya - xa * k;
+      ctx.setTransform(a + c * k, b + d * k, c, d, e + c * f0, f + d * f0);
+      ctx.drawImage(E.cv, p0, 0, p1 - p0, E.H, E.x0 + p0 * iw, E.y0, (p1 - p0) * iw, E.H * iw);
+    }
+    xa = xb; ya = yb;
+  }
+  FMP = true;
+}
+// Ojos preparados: el mismo dibujo de drawEye guardado como imagen pequeña (a la resolución real del ojo)
+const EYEC = new Map(), EXI = { calm: 0, hunt: 1, scared: 2, eat: 3, hurt: 4, dead: 5 };
+const EYEV = { ex: 'calm', lx: 1, ly: 0, pup: 0.4, blink: 0 };
+function eyeDraw(R, V, lid, iris, grump, ppu, f) {
+  const px = R * ppu, xi = EXI[V.ex];
+  if (px > 24 || px < 1.3 || xi === undefined || typeof lid !== 'string') { drawEye(R, V, lid, iris, grump, ppu); return; }
+  const pq = px <= 8 ? Math.max(6, Math.round(px * 4)) : px <= 16 ? Math.round(px * 2) * 2 : Math.round(px) * 4, dir = xi <= 2 ? (Math.round(Math.atan2(V.ly, V.lx) / (Math.PI / 4)) & 7) : 0;
+  const bl = V.blink > 0.02 ? 1 + Math.min(3, Math.floor(V.blink * 4)) : 0, pu = Math.round(V.pup * 50);
+  const code = (((pq * 8 + xi) * 8 + dir) * 5 + bl) * 64 + pu;
+  let S = f && f._eC === code && f._eL === lid && f._eI === iris ? f._eS : null;
+  if (!S) {
+    const key = lid + iris + (grump ? '!' : '') + code;
+    S = EYEC.get(key);
+    if (!S) {
+      if (EYEC.size > 500) { for (const [k2, q] of EYEC) if (q.f < SPR.frame - 240) EYEC.delete(k2); if (EYEC.size > 500) EYEC.clear(); }
+      const Rp = pq / 4, W = Math.ceil(2.6 * Rp) + 2, H = Math.ceil(3.45 * Rp) + 2, ox = 1.3 * Rp + 1, oy = 2.15 * Rp + 1;
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const x = c.getContext('2d'), old = ctx;
+      EYEV.ex = V.ex; EYEV.lx = xi <= 2 ? Math.cos(dir * Math.PI / 4) : 1; EYEV.ly = xi <= 2 ? Math.sin(dir * Math.PI / 4) : 0;
+      EYEV.pup = pu / 50; EYEV.blink = bl ? (bl - 0.5) / 4 : 0;
+      ctx = x; x.translate(ox, oy);
+      try { drawEye(Rp, EYEV, lid, iris, grump, 1); } finally { ctx = old; }
+      S = { cv: c, x0: -ox / Rp, y0: -oy / Rp, w: W / Rp, h: H / Rp, f: 0 };
+      EYEC.set(key, S);
+    }
+    if (f) { f._eC = code; f._eL = lid; f._eI = iris; f._eS = S; }
+  }
+  S.f = SPR.frame;
+  ctx.drawImage(S.cv, S.x0 * R, S.y0 * R, S.w * R, S.h * R);
+}
 function drawFish(f, t, ol, sc, G) {
   const s = SP[f.sp], shape = s.shape;
   let vis = 1;
@@ -5183,68 +5276,77 @@ function drawFish(f, t, ol, sc, G) {
   const PS = f.skin && SKINS[f.skin] && SKINS[f.skin].glow ? SKINS[f.skin] : null;
   const baseA = (f.hidden > 0 ? (f.isP ? 0.45 : 0.25) : 1) * (PS && PS.alpha ? PS.alpha : 1) * (G ? G.a : 1);
   if (baseA < 0.01) return;
-  ctx.save();
+  const fast = !G && CAMM.on;
+  if (!fast) { ctx.save(); ctx.translate(f.x, f.y); }
   ctx.globalAlpha = baseA;
-  ctx.translate(f.x, f.y);
   const c = Math.cos(f.ang), sn = Math.sin(f.ang);
   const fxv = G ? (c >= 0 ? 1 : -1) : f._fx;
   const sx = fxv >= 0 ? 1 : -1, fa = Math.abs(fxv);
   let tilt = clamp(Math.atan2(sn, Math.abs(c)), -1.35, 1.35);
   if (f.stun > 0) tilt += Math.sin(t * 40) * 0.1;
   const k = f.r / 10 * vis * (G ? G.s : 1);
-  ctx.scale(sx * k * Math.max(0.35, fa), k * (1 + 0.1 * (1 - fa)));
-  ctx.rotate(tilt + V.rot);
+  const s1x = sx * k * Math.max(0.35, fa), s1y = k * (1 + 0.1 * (1 - fa)), th = tilt + V.rot;
+  if (fast) {
+    const S = CAMM.s, cr = Math.cos(th), sr = Math.sin(th);
+    FM[0] = S * s1x * cr; FM[1] = S * s1y * sr; FM[2] = -S * s1x * sr; FM[3] = S * s1y * cr; FM[4] = S * f.x + CAMM.e; FM[5] = S * f.y + CAMM.f; FMP = true;
+  } else { ctx.scale(s1x, s1y); ctx.rotate(th); }
   if (!G && (PS || f.isP)) {
     const gc = PS ? PS.glow : '160,255,230', ga = PS ? 0.45 : f.member ? 0.2 : 0.28, gR = PS ? 26 : f.member ? 15 : 22;
+    if (fast) fmUse();
     ctx.globalAlpha = baseA * ga; ctx.drawImage(glowSpr(gc), -gR, -gR, gR * 2, gR * 2); ctx.globalAlpha = baseA;
   }
-  if (shape === 'lantern') { ctx.globalAlpha = baseA * 0.34; ctx.drawImage(glowSpr('143,247,255'), -16, -16, 32, 32); ctx.globalAlpha = baseA; }
+  if (shape === 'lantern') { if (fast) fmUse(); ctx.globalAlpha = baseA * 0.34; ctx.drawImage(glowSpr('143,247,255'), -16, -16, 32, 32); ctx.globalAlpha = baseA; }
   if (!G && (f.frenzy > 0 || f.power > 0 || f.ambush > 0)) {
+    if (fast) fmUse();
     ctx.fillStyle = 'rgba(255,60,60,' + (0.18 + 0.12 * Math.sin(t * 20)).toFixed(3) + ')';
     OUTLINES[shape](); ctx.fill();
   }
-  if (!G && f.poisonT > 0) { ctx.fillStyle = 'rgba(170,90,220,0.25)'; OUTLINES[shape](); ctx.fill(); }
-  ctx.scale(V.sx, V.sy * (G && G.flip !== undefined ? G.flip : 1));
+  if (!G && f.poisonT > 0) { if (fast) fmUse(); ctx.fillStyle = 'rgba(170,90,220,0.25)'; OUTLINES[shape](); ctx.fill(); }
+  const vsy = V.sy * (G && G.flip !== undefined ? G.flip : 1);
+  if (fast) { FM[0] *= V.sx; FM[1] *= V.sx; FM[2] *= vsy; FM[3] *= vsy; FMP = true; } else ctx.scale(V.sx, vsy);
   const C = fishCol(f, s, t), ck = FC_K;
   const amp = (f.air ? 1.2 : 0.4 + 0.6 * clamp(f.thr, 0, 1)) + (1 - fa) * 0.9;   // coletazo al girar
   const bend = clamp(-f.av * 0.09 * sx, -0.5, 0.5);
-  const ppu = DRAW_PPU * k * Math.max(V.sx, V.sy);
+  const ppu = DRAW_PPU * k * Math.max(V.sx, V.sy), ppuL = DRAW_PPU * k;   // ppuL: sin el estirón de las animaciones
   let eyeP = null, ea = 0, eyOff = 0;
   if (shape === 'angler') {                               // luz del señuelo
     const gr = f.lure > 0 ? 11 : 6.5;
+    if (fast) fmUse();
     ctx.globalAlpha = baseA * 0.9; ctx.drawImage(glowSpr('255,245,180'), 15 - gr, -13 - gr, gr * 2, gr * 2); ctx.globalAlpha = baseA;
   }
   if (!LIVE[shape]) {
     const ext = shape === 'round' && f.inflate > 0 ? 'inf' : shape === 'flyer' && (f.air || f.glide > 0) ? 'open' : '';
     // el sprite de este pez se recuerda mientras no cambie nada (ahorra buscarlo cada fotograma)
-    const lvq = sprLv(ppu);
+    const lvq = sprLv(ppuL);
     let E = f._sE;
     if (E && E.cv.width && f._sK === ck && f._sM === V.mq && f._sX === ext && f._sL === lvq) E.last = SPR.frame;
     else {
       SHP.pat = (f.skin && SKINS[f.skin] && SKINS[f.skin].pat) || null;
-      E = sprFor(shape, C, ck, V.mq, ext, ppu);
+      E = sprFor(shape, C, ck, V.mq, ext, ppuL);
       SHP.pat = null;
       if (E && E.lv === lvq) { f._sE = E; f._sK = ck; f._sM = V.mq; f._sX = ext; f._sL = lvq; } else f._sE = null;
     }
     if (E) {
       const len = (BOUNDS[shape][1] - BOUNDS[shape][0]) * ppu;
-      const n = len < 36 ? 1 : len < 100 ? 3 : len < 170 ? Math.min(4, GFX.slices) : len > 300 ? GFX.slices + 2 : GFX.slices;
+      const n = len < 56 ? 1 : len < 110 ? 2 : len < 170 ? Math.min(3, GFX.slices) : len > 300 ? GFX.slices + 2 : GFX.slices;
       waveSet(shape, f, G ? 0.4 : amp, G ? 0 : bend);
-      if (n === 1) ctx.rotate(waveA(0.55) * 0.6);          // tan pequeño que basta con un leve vaivén
-      drawSlices(E, n);
+      if (n === 1) { if (fast) fmRot(waveA(0.55) * 0.6); else ctx.rotate(waveA(0.55) * 0.6); }   // tan pequeño que basta con un leve vaivén
+      if (fast) drawSlicesM(E, n); else drawSlices(E, n);
       if (f.flash > 0 && !G) {                            // destello blanco al recibir un golpe
         ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = baseA * 0.7 * clamp(f.flash / 0.15, 0, 1);
-        drawSlices(E, n);
+        if (fast) drawSlicesM(E, n); else drawSlices(E, n);
         ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = baseA;
       }
       eyeP = E.eye;
       if (n > 1) { const ue = clamp((WV.hx - eyeP[0]) / WV.L, 0, 1); eyOff = waveY(ue); ea = waveA(ue); }
     } else {
+      if (fast) fmUse();
       drawLive(shape, C, Math.sin(f.wig) * amp + bend, V.mq, f, t, false);
       eyeP = SHP.eye;
       if (f.flash > 0 && !G) { ctx.globalAlpha = baseA * 0.6; ctx.fillStyle = '#ffffff'; OUTLINES[shape](); ctx.fill(); ctx.globalAlpha = baseA; }
     }
   } else {
+    if (fast) fmUse();
     drawLive(shape, C, Math.sin(f.wig) * amp + bend, clamp(f.mouth / 0.25, 0, 1), f, t, true);
     eyeP = SHP.eye;
     const lp = f.skin && SKINS[f.skin] && SKINS[f.skin].pat;
@@ -5252,9 +5354,17 @@ function drawFish(f, t, ol, sc, G) {
     if (f.flash > 0 && !G) { ctx.globalAlpha = baseA * 0.6; ctx.fillStyle = '#ffffff'; OUTLINES[shape](); ctx.fill(); ctx.globalAlpha = baseA; }
   }
   if (eyeP && eyeP[2] > 0) {
-    ctx.save(); ctx.translate(eyeP[0], eyeP[1] + eyOff); ctx.rotate(ea);
-    drawEye(eyeP[2], V, C.back, IRIS[f.sp] || '#2a3a4a', GRUMPY[f.sp], ppu);
-    ctx.restore();
+    if (fast) {                                           // matriz del ojo = FM × traslación × giro, en una orden
+      const ex = eyeP[0], ey = eyeP[1] + eyOff, ca = Math.cos(ea), sa = Math.sin(ea), a = FM[0], b = FM[1], c2 = FM[2], d = FM[3];
+      ctx.setTransform(a * ca + c2 * sa, b * ca + d * sa, -a * sa + c2 * ca, -b * sa + d * ca, a * ex + c2 * ey + FM[4], b * ex + d * ey + FM[5]);
+      eyeDraw(eyeP[2], V, C.back, IRIS[f.sp] || '#2a3a4a', GRUMPY[f.sp], ppu, f);
+      FMP = true;
+    } else {
+      ctx.save(); ctx.translate(eyeP[0], eyeP[1] + eyOff); ctx.rotate(ea);
+      drawEye(eyeP[2], V, C.back, IRIS[f.sp] || '#2a3a4a', GRUMPY[f.sp], ppu);
+      ctx.restore();
+    }
+    if (fast && (V.sweat || V.ex === 'hurt')) fmUse();
     if (V.sweat && eyeP[2] * ppu > 2.4) drawSweat(eyeP[0], eyeP[1] + eyOff, eyeP[2], t);
     if (V.ex === 'hurt' && V.hit > 0.3 && eyeP[2] * ppu > 2.2) {   // líneas de impacto
       ctx.strokeStyle = 'rgba(255,255,255,' + (0.9 * V.hit).toFixed(3) + ')'; ctx.lineWidth = eyeP[2] * 0.3; ctx.lineCap = 'round';
@@ -5264,8 +5374,8 @@ function drawFish(f, t, ol, sc, G) {
       ctx.stroke();
     }
   }
-  if (ol && !G) { ctx.strokeStyle = ol; ctx.lineWidth = 2.6 / (sc * k * Math.min(V.sx, V.sy)); OUTLINES[shape](); ctx.stroke(); }
-  ctx.restore();
+  if (ol && !G) { if (fast) fmUse(); ctx.strokeStyle = ol; ctx.lineWidth = 2.6 / (sc * k * Math.min(V.sx, V.sy)); OUTLINES[shape](); ctx.stroke(); }
+  if (fast) { ctx.setTransform(CAMM.s, 0, 0, CAMM.s, CAMM.e, CAMM.f); ctx.globalAlpha = 1; FMP = false; } else ctx.restore();
   if (G) return;
   if (f.lure > 0) {
     const lx = f.x + c * f.r * 1.5, ly = f.y - f.r * 1.3, R = f.r * 5;
@@ -5383,6 +5493,11 @@ function krillSpr() {                                    // krill a 8 px por uni
   KRS = c; return c;
 }
 function drawKrill(k) {
+  if (CAMM.on) {
+    const w = Math.sin(k.ph) * 0.4, S = CAMM.s, c = Math.cos(w) * S, s = Math.sin(w) * S;
+    ctx.setTransform(c, s, -s, c, S * k.x + CAMM.e, S * k.y + CAMM.f); ctx.drawImage(krillSpr(), -5.5, -3.5, 11, 8.5);
+    return;
+  }
   ctx.save(); ctx.translate(k.x, k.y); ctx.rotate(Math.sin(k.ph) * 0.4);
   ctx.drawImage(krillSpr(), -5.5, -3.5, 11, 8.5);
   ctx.restore();
@@ -6119,6 +6234,32 @@ function drawToast(q, y, side) {
 }
 
 const MINI = { cv: null, w: null, mw: 0, mh: 0, d: 0, k: null };
+// Piezas del marcador como imagen: key identifica la pieza; w×h en px de pantalla; draw pinta con ctx en (0,0)-(w,h)
+const HUDC = new Map();
+function hudSpr(key, w, h, draw) {
+  const d = view.dpr, k = key + '|' + w + '|' + h + '|' + Math.round(d * 20);
+  let e = HUDC.get(k);
+  if (!e) {
+    if (HUDC.size > 80) HUDC.clear();
+    const c = document.createElement('canvas'); c.width = Math.max(1, Math.ceil(w * d)); c.height = Math.max(1, Math.ceil(h * d));
+    const x = c.getContext('2d'), old = ctx, ot = TXT.on;
+    ctx = x; TXT.on = false; x.setTransform(d, 0, 0, d, 0, 0); x.textBaseline = 'middle';
+    try { draw(); } finally { ctx = old; TXT.on = ot; }
+    e = { cv: c, w, h }; HUDC.set(k, e);
+  }
+  return e;
+}
+function hudPut(e, x, y) { ctx.drawImage(e.cv, x, y, e.w, e.h); }
+function barBack(x, y, w, hh, rad) {                      // fondo oscuro de una barra
+  hudPut(hudSpr('bb' + rad, w, hh, () => { ctx.fillStyle = 'rgba(4,20,34,0.6)'; rr(0, 0, w, hh, rad); ctx.fill(); }), x, y);
+}
+function barFrame(x, y, w, hh, rad, label) {             // marco claro y etiqueta de una barra
+  const L = label ? tr(label) : '';
+  hudPut(hudSpr('bf' + rad + L, w + 4, hh + 4, () => {
+    ctx.strokeStyle = '#eafffb'; ctx.lineWidth = 2; rr(2, 2, w, hh, rad); ctx.stroke();
+    if (L) { ctx.textAlign = 'left'; otext(label, 10, 2 + hh / 2 + 0.5, 12, '#eafffb', 600); }
+  }), x - 2, y - 2);
+}
 function drawHUD(sc) {
   TXT.on = true;
   try { drawHUD0(sc); } finally { TXT.on = false; }
@@ -6132,23 +6273,23 @@ function drawHUD0(sc) {
   const sch = g.mode === 'school';
   if (sch) {
     const n = g.schoolN || 0, fp = n >= SCHOOL_MAX ? 1 : clamp(g.food / schoolNeed(n), 0, 1);
-    ctx.fillStyle = 'rgba(4,20,34,0.6)'; rr(x0, y0, bw, 16, 8); ctx.fill();
+    barBack(x0, y0, bw, 16, 8);
     if (n > 0) { ctx.fillStyle = '#5ab8ff'; rr(x0, y0, Math.max(10, bw * n / SCHOOL_MAX), 16, 8); ctx.fill(); }
-    ctx.strokeStyle = '#eafffb'; ctx.lineWidth = 2; rr(x0, y0, bw, 16, 8); ctx.stroke();
-    ctx.textAlign = 'left'; otext('Banco', x0 + 8, y0 + 8.5, 12, '#eafffb', 600);
+    barFrame(x0, y0, bw, 16, 8, 'Banco');
+    ctx.textAlign = 'left';
     otext(n + (sw < 600 ? ' peces' : n === 1 ? ' sardina' : ' sardinas') + (n >= SCHOOL_MAX ? ' (máx.)' : ''), x0, y0 + 34, 17, '#ffffff', 600);
-    ctx.fillStyle = 'rgba(4,20,34,0.6)'; rr(x0, y0 + 46, bw, 7, 4); ctx.fill();
+    barBack(x0, y0 + 46, bw, 7, 4);
     if (fp > 0) { ctx.fillStyle = '#7ef0c8'; rr(x0, y0 + 46, Math.max(6, bw * fp), 7, 4); ctx.fill(); }
   } else {
   const hpP = clamp(P.hp / P.hpMax, 0, 1);
-  ctx.fillStyle = 'rgba(4,20,34,0.6)'; rr(x0, y0, bw, 16, 8); ctx.fill();
+  barBack(x0, y0, bw, 16, 8);
   if (hpP > 0) { ctx.fillStyle = P.poisonT > 0 ? '#c07ae8' : hpP > 0.5 ? '#5ef08a' : hpP > 0.25 ? '#ffd23f' : '#ff3b4f'; rr(x0, y0, Math.max(10, bw * hpP), 16, 8); ctx.fill(); }
-  ctx.strokeStyle = '#eafffb'; ctx.lineWidth = 2; rr(x0, y0, bw, 16, 8); ctx.stroke();
-  ctx.textAlign = 'left'; otext('Vida', x0 + 8, y0 + 8.5, 12, '#eafffb', 600);
+  barFrame(x0, y0, bw, 16, 8, 'Vida');
+  ctx.textAlign = 'left';
   const tl = tallaOf(P.r), r1 = tallaR(tl), r2 = tallaR(tl + 1);
   const gp = P.r >= RMAX ? 1 : clamp((P.m - r1 * r1) / (r2 * r2 - r1 * r1), 0, 1);
   otext('Talla ' + tl + (P.r >= RMAX ? ' (máx.)' : ''), x0, y0 + 34, 17, '#ffffff', 600);
-  ctx.fillStyle = 'rgba(4,20,34,0.6)'; rr(x0, y0 + 46, bw, 7, 4); ctx.fill();
+  barBack(x0, y0 + 46, bw, 7, 4);
   if (gp > 0) { ctx.fillStyle = '#7ef0c8'; rr(x0, y0 + 46, Math.max(6, bw * gp), 7, 4); ctx.fill(); }
   }
   ctx.textAlign = 'center';
@@ -6158,13 +6299,15 @@ function drawHUD0(sc) {
     const mult = comboMult(g.combo);
     const hot = g.combo >= 6 ? '#ff6fd8' : g.combo >= 4 ? '#ff7a4a' : '#ffb86b';
     otext('Racha ×' + (mult % 1 ? String(Math.round(mult * 100) / 100).replace('.', ',') : mult), sw / 2, y0 + 60, g.combo >= 4 ? 19 : 17, hot, 700);
-    ctx.fillStyle = 'rgba(4,20,34,0.6)'; rr(sw / 2 - 40, y0 + 71, 80, 5, 3); ctx.fill();
+    barBack(sw / 2 - 40, y0 + 71, 80, 5, 3);
     ctx.fillStyle = hot; rr(sw / 2 - 40, y0 + 71, 80 * clamp(g.comboT / 3, 0, 1), 5, 3); ctx.fill();
   }
   const pb = hud.pause;
-  ctx.fillStyle = 'rgba(4,20,34,0.55)'; ctx.beginPath(); ctx.arc(pb.x, pb.y, pb.r, 0, TAU); ctx.fill();
-  ctx.strokeStyle = '#eafffb'; ctx.lineWidth = 2; ctx.stroke();
-  ctx.fillStyle = '#eafffb'; ctx.fillRect(pb.x - 7, pb.y - 8, 5, 16); ctx.fillRect(pb.x + 2, pb.y - 8, 5, 16);
+  { const q = pb.r + 3; hudPut(hudSpr('pausa', q * 2, q * 2, () => {
+    ctx.fillStyle = 'rgba(4,20,34,0.55)'; ctx.beginPath(); ctx.arc(q, q, pb.r, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#eafffb'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#eafffb'; ctx.fillRect(q - 7, q - 8, 5, 16); ctx.fillRect(q + 2, q - 8, 5, 16);
+  }), pb.x - q, pb.y - q); }
   // minimapa con cofres
   const mw = hud.map.w, mh = hud.map.h, mx = hud.map.x, my = hud.map.y;
   if (MINI.w !== WORLD || MINI.mw !== mw || MINI.mh !== mh || MINI.d !== d || MINI.k !== MAPK) {   // relieve del minimapa: se pinta una vez
@@ -6175,33 +6318,43 @@ function drawHUD0(sc) {
     x.fillStyle = 'rgba(201,168,119,0.8)'; x.beginPath(); x.moveTo(0, mh);
     for (let i = 0; i <= 60; i++) x.lineTo(i / 60 * mw, floorY(i / 60 * WORLD_W) / WORLD_H * mh);
     x.lineTo(mw, mh); x.closePath(); x.fill(); x.restore();
+    x.strokeStyle = 'rgba(234,255,251,0.7)'; x.lineWidth = 1.5; x.beginPath(); x.roundRect ? x.roundRect(0.75, 0.75, mw - 1.5, mh - 1.5, 7.3) : x.rect(0.75, 0.75, mw - 1.5, mh - 1.5); x.stroke();
     MINI.w = WORLD; MINI.mw = mw; MINI.mh = mh; MINI.d = d; MINI.k = MAPK;
   }
   ctx.drawImage(MINI.cv, mx, my, mw, mh);
-  ctx.save(); rr(mx, my, mw, mh, 8); ctx.clip();
-  ctx.fillStyle = '#ffd23f';
-  for (let _i90 = 0, _a90 = g.chests, c; _i90 < _a90.length && ((c = _a90[_i90]), true); _i90++) if (!c.open) { ctx.beginPath(); ctx.arc(mx + wrapX(c.x) / WORLD_W * mw, my + c.y / WORLD_H * mh - 1.5, 1.8, 0, TAU); ctx.fill(); }
-  ctx.restore();
-  ctx.strokeStyle = 'rgba(234,255,251,0.7)'; ctx.lineWidth = 1.5; rr(mx, my, mw, mh, 8); ctx.stroke();
+  ctx.fillStyle = '#ffd23f'; ctx.beginPath();
+  for (let i = 0, CH = g.chests; i < CH.length; i++) {
+    const c = CH[i]; if (c.open) continue;
+    const cx = mx + wrapX(c.x) / WORLD_W * mw, cy = my + c.y / WORLD_H * mh - 1.5;
+    if (cx < mx + 2 || cx > mx + mw - 2 || cy < my + 2 || cy > my + mh - 2) continue;
+    ctx.moveTo(cx + 1.8, cy); ctx.arc(cx, cy, 1.8, 0, TAU);
+  }
+  ctx.fill();
   ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(mx + wrapX(P.x) / WORLD_W * mw, my + Math.max(0, P.y) / WORLD_H * mh, 3.2, 0, TAU); ctx.fill();
   ctx.strokeStyle = OUT; ctx.lineWidth = 1.5; ctx.stroke();
   const b = hud.bite, ready = sch ? !(g.ballT > 0) : P.biteT <= 0 && P.inflate <= 0;
-  ctx.fillStyle = ready ? 'rgba(255,107,87,0.92)' : 'rgba(4,20,34,0.55)';
-  ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
-  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.stroke();
-  jawIcon(b.x, b.y - 5 * b.s, 1.25 * b.s, '#ffffff');
-  otext(sch ? 'Atacar' : 'Morder', b.x, b.y + 22 * b.s, 12, '#ffffff', 600);
+  { const q = b.r + 4, lab = tr(sch ? 'Atacar' : 'Morder'); hudPut(hudSpr('morder' + ready + b.s + lab, q * 2, q * 2, () => {
+    ctx.fillStyle = ready ? 'rgba(255,107,87,0.92)' : 'rgba(4,20,34,0.55)';
+    ctx.beginPath(); ctx.arc(q, q, b.r, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.stroke();
+    jawIcon(q, q - 5 * b.s, 1.25 * b.s, '#ffffff');
+    ctx.textAlign = 'center'; otext(sch ? 'Atacar' : 'Morder', q, q + 22 * b.s, 12, '#ffffff', 600);
+  }), b.x - q, b.y - q); }
   const a = hud.ab, s = SP[P.sp], aReady = P.abT <= 0, abCD = sch ? SCHOOL_BALL_CD : s.abCD;
-  ctx.fillStyle = aReady ? 'rgba(20,169,156,0.92)' : 'rgba(4,20,34,0.55)';
-  ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, TAU); ctx.fill();
+  { const q = a.r + 2; hudPut(hudSpr('abd' + aReady, q * 2, q * 2, () => {
+    ctx.fillStyle = aReady ? 'rgba(20,169,156,0.92)' : 'rgba(4,20,34,0.55)'; ctx.beginPath(); ctx.arc(q, q, a.r, 0, TAU); ctx.fill();
+  }), a.x - q, a.y - q); }
   if (!aReady) {
     const p = clamp(1 - P.abT / abCD, 0, 1);
     ctx.fillStyle = 'rgba(20,169,156,0.45)'; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.arc(a.x, a.y, a.r, -Math.PI / 2, -Math.PI / 2 + p * TAU); ctx.closePath(); ctx.fill();
   }
   ctx.strokeStyle = '#ffffff'; ctx.lineWidth = aReady ? 3 + Math.abs(Math.sin(g.t * 4)) * 1.5 : 2;
   ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, TAU); ctx.stroke();
-  abIcon(sch ? 'ball' : s.ab, a.x, a.y - 1, 1.15 * a.s, aReady ? '#ffffff' : 'rgba(255,255,255,0.55)');
-  otext(sch ? 'Bola' : s.abName, a.x, a.y + a.r + 12, 12, '#ffffff', 600);
+  { const ic = sch ? 'ball' : s.ab, lab = tr(sch ? 'Bola' : s.abName), W = Math.max(a.r * 2 + 8, 150), top = a.r + 4, H = top + a.r + 24;
+    hudPut(hudSpr('abi' + ic + aReady + a.s + lab, W, H, () => {
+      abIcon(ic, W / 2, top - 1, 1.15 * a.s, aReady ? '#ffffff' : 'rgba(255,255,255,0.55)');
+      ctx.textAlign = 'center'; otext(sch ? 'Bola' : s.abName, W / 2, top + a.r + 12, 12, '#ffffff', 600);
+    }), a.x - W / 2, a.y - top); }
   const st = input.stick;
   if (st) {
     ctx.strokeStyle = 'rgba(234,255,251,0.45)'; ctx.lineWidth = 3;
@@ -6575,7 +6728,9 @@ function drawSchoolFx(sc) {
 
 const BGC = { cv: null, x: null };
 const CTX0 = ctx;
+const VISL = [], byRadius = (a, b) => (b.r > a.r) - (b.r < a.r);
 function render() {
+  CAMM.on = false;
   if (ctx !== CTX0) { ctx = CTX0; view.dpr = cv.width / Math.max(1, view.sw); }   // por si un fallo dejó el lienzo del fondo puesto
   const g = game, sw = view.sw, sh = view.sh, d = view.dpr;
   ctx.setTransform(d, 0, 0, d, 0, 0);
@@ -6613,14 +6768,25 @@ function render() {
     ctx.drawImage(BGC.cv, 0, 0, cv.width, cv.height);
   }
   ctx.setTransform(d * sc, 0, 0, d * sc, (sw / 2 - cam.x * sc + shx) * d, (sh / 2 - cam.y * sc + shy) * d);
+  CAMM.s = d * sc; CAMM.e = (sw / 2 - cam.x * sc + shx) * d; CAMM.f = (sh / 2 - cam.y * sc + shy) * d; CAMM.on = true;
   drawSeabed(x0, x1, y1, g.t, sc);
   drawPipes(x0, x1, y0, y1, g.t, sc, false);
   for (let _i94 = 0, _a94 = g.chests, c; _i94 < _a94.length && ((c = _a94[_i94]), true); _i94++) if (c.x > x0 - 60 && c.x < x1 + 60 && c.y > y0 - 60 && c.y < y1 + 80) drawWorldChest(c, g.t, sc);
   const P = g.P, live = !g.demo && !P.dead, sch = g.mode === 'school', ref = sch ? g.rep : P;
   for (let _i95 = 0, _a95 = g.krill, k; _i95 < _a95.length && ((k = _a95[_i95]), true); _i95++) if (k.x > x0 - 10 && k.x < x1 + 10 && k.y > y0 - 10 && k.y < y1 + 10) drawKrill(k);
+  ctx.setTransform(CAMM.s, 0, 0, CAMM.s, CAMM.e, CAMM.f);
   for (let _i96 = 0, _a96 = g.jelly, j; _i96 < _a96.length && ((j = _a96[_i96]), true); _i96++) if (j.x > x0 - j.r * 2 && j.x < x1 + j.r * 2 && j.y > y0 - j.r * 2 && j.y < y1 + j.r * 2) { drawJelly(j, live ? (ref.r >= j.r * 2.2 ? '#5ef08a' : '#f7a6e8') : null, sc); if (live) markSeen('medusa'); }
-  const vis = g.fish.filter((f) => !f.dead && !f.isP && f.x > x0 - f.r * 3 && f.x < x1 + f.r * 3 && f.y > y0 - f.r * 3 && f.y < y1 + f.r * 3);
-  vis.sort((a, b) => b.r - a.r);
+  const vis = VISL; vis.length = 0;
+  for (let i = 0, F = g.fish; i < F.length; i++) { const f = F[i]; if (!f.dead && !f.isP && f.x > x0 - f.r * 3 && f.x < x1 + f.r * 3 && f.y > y0 - f.r * 3 && f.y < y1 + f.r * 3) vis.push(f); }
+  vis.sort(byRadius);
+  if ((SPR.frame & 7) === 0) {                              // los que están a punto de entrar en pantalla
+    const mx = hw * 1.7, my = hh * 1.7;
+    for (let i = 0, F = g.fish; i < F.length; i++) {
+      const f = F[i]; if (f.dead || f.isP) continue;
+      const dx = Math.abs(f.x - cam.x), dy = Math.abs(f.y - cam.y), m = f.r * 3;
+      if (dx < mx + m && dy < my + m && !(dx < hw + m && dy < hh + m)) sprWant(f);
+    }
+  }
   drawFishShadows(vis, g.demo || sch || P.dead ? null : P, sc);
   drawIce(x0, x1, y0, y1, g.t, sc);
   drawTrash(x0, x1, y0, y1, sc);
@@ -6640,6 +6806,7 @@ function render() {
   if (!g.demo && !sch && !P.dead) {
     if (!(P.inv > 0 && P.inv < 1 && Math.floor(P.inv * 12) % 2 === 0)) drawFish(P, g.t, null, sc);
   }
+  CAMM.on = false;
   drawGhosts(g.t, sc);
   for (let _i98 = 0, _a98 = g.insects, sw; _i98 < _a98.length && ((sw = _a98[_i98]), true); _i98++) for (let _i99 = 0, _a99 = sw.bugs, b; _i99 < _a99.length && ((b = _a99[_i99]), true); _i99++) {
     if (b.x === undefined || b.x < x0 - 10 || b.x > x1 + 10 || b.y < y0 - 10 || b.y > y1 + 10) continue;
@@ -6705,6 +6872,7 @@ function render() {
     ctx.setTransform(d, 0, 0, d, 0, 0);
   }
   if (!g.demo) drawHUD(sc);
+  sprWork(mode !== 'play' ? 8 : SPR.boostT > 0 ? 6 : 2.5);   // horneado pendiente, con presupuesto de tiempo
 }
 
 // ================= Entrada =================
@@ -6778,7 +6946,10 @@ function startGame() {
   if (!sch && bk && (save.boosts[bk] || 0) > 0) { save.boosts[bk]--; used.push(bk); }
   if (sch) save.schoolTried = true;
   persist();
+  gfxApply();                                            // la calidad «Auto» decidida en la partida anterior
   newGame(sch ? 'sardina' : save.sel, false, used, sch ? 'school' : 'classic');
+  SPR.boostT = 1.2;
+  try { const om = mode; mode = 'play'; render(); sprWork(30); mode = om; } catch (e) {}   // adelantar los dibujos de los peces de salida
   GM.n = 0; GM.sum = 0; GM.work = 0; GM.done = false;
   try { if (GFX.fg) { fgSprite('kelp'); fgSprite('rock'); if (MAPK === 'templado') fgSprite('coral'); } } catch (e) {}   // el desenfoque se prepara ahora
   mode = 'play'; resetInput(); showScreen(null);
@@ -7883,7 +8054,13 @@ window.__pezResume = () => { musicSleep(false); };
 })();
 
 // ================= Bucle =================
+// Tope de 60 fps: se mide el refresco de la pantalla (mediana de 30 intervalos) y, si es de 110 Hz o más,
+// solo se procesa uno de cada k refrescos (k = 2 en 120 Hz). El tiempo de juego usa lo transcurrido de verdad.
+const FPS = { k: 1, c: 0, n: 0, prev: 0, iv: new Float64Array(30) };
 function frame(now) {
+  if (FPS.prev) { const iv = now - FPS.prev; if (iv > 2 && iv < 50) { FPS.iv[FPS.n % 30] = iv; FPS.n++; if (FPS.n % 30 === 0) { const s = Array.from(FPS.iv).sort((x, y) => x - y); FPS.k = Math.max(1, Math.floor(1000 / s[15] / 60 + 0.25)); } } }
+  FPS.prev = now;
+  if (FPS.k > 1 && ++FPS.c % FPS.k !== 0) { requestAnimationFrame(frame); return; }
   let dt = (now - last) / 1000;
   last = now;
   if (!(dt > 0)) dt = 0;
@@ -7899,9 +8076,10 @@ function frame(now) {
     }
   } catch (err) { console.error(err); }
   const still = (mode === 'pause' || mode === 'result') && game && !game.demo;
+  if (SPR.boostT > 0) SPR.boostT -= dt;
   if (!still || !REND.still) { try { render(); } catch (err) { console.error(err); } }
   REND.still = still;
-  if (mode === 'play' && game && !game.demo) { gfxMeasure(raw, performance.now() - w0); drsTick(raw); }
+  if (mode === 'play' && game && !game.demo) gfxMeasure(raw, performance.now() - w0);
   try { if (openAnim) tickOpen(dt); } catch (err) { console.error(err); }
   requestAnimationFrame(frame);
 }
@@ -7910,7 +8088,7 @@ document.querySelectorAll('.gemonly').forEach((el) => { el.hidden = !DIAMONDS; }
 resize();
 newGame(save.sel, true);
 showScreen('menu');
-try { if (document.fonts && document.fonts.load) document.fonts.load('700 20px "Fredoka"').then(() => { TXT.map.clear(); refreshMenu(); }).catch(() => {}); } catch (e) {}
+try { if (document.fonts && document.fonts.load) document.fonts.load('700 20px "Fredoka"').then(() => { TXT.map.clear(); HUDC.clear(); refreshMenu(); }).catch(() => {}); } catch (e) {}
 
 // ================= Logo: «Arena» de arena =================
 function sandWord(F) {

@@ -62,18 +62,23 @@ Se eligen en el menú con el botón del mar (debajo de «Jugar»). Cada uno tien
 
 ## Gráficos
 
-- Los peces se «hornean» una vez en sprites con volumen (degradado, brillo, luz de contorno, silueta gruesa, aletas translúcidas y escamas) y se dibujan en tiras que siguen la onda del nado. Los ojos se dibujan en vivo: miran a la presa o al peligro, parpadean y cambian con el estado (tranquilo, cazando, asustado, comiendo, aturdido, herido).
+- Los peces se «hornean» en sprites con volumen (degradado, brillo, luz de contorno, silueta gruesa, aletas translúcidas y escamas) y se dibujan en tiras que siguen la onda del nado. Los ojos miran a la presa o al peligro, parpadean y cambian con el estado (tranquilo, cazando, asustado, comiendo, aturdido, herido).
 - Animaciones de mordisco, trago, acelerón, golpe, subir de talla y muerte, con parada de impacto, temblor de cámara según el daño y vibración (se puede apagar en Ajustes).
 - Al cambiar de sentido, los peces (y las gaviotas y los buceadores) no se voltean de golpe: giran en unas décimas de segundo, con un coletazo; los grandes, algo más despacio.
 - El fondo va por capas (lejos, medio, juego y primer plano) con color, luz y niebla propios de cada zona.
-- Calidad gráfica en Ajustes: Auto, Alta, Media o Baja. En Auto el juego mide los primeros segundos de cada partida y baja la calidad si el móvil no llega a unos 46 fps.
-- Resolución dinámica: en cualquier calidad, si los fotogramas van lentos el lienzo baja un poco de resolución (como mucho hasta el 72–80 %) y la recupera cuando va holgado. Así no se notan tirones.
-- El fondo lejano (agua, relieve del fondo, cielo, rayos de luz y nieve marina) se pinta a menos resolución y se escala: es lo que más píxeles movía.
+- Calidad gráfica en Ajustes: Auto, Alta, Media o Baja. En Auto el juego mide los primeros segundos de cada partida y, si el móvil no llega a unos 46 fps, usa una calidad más baja **a partir de la partida siguiente** (nunca cambia a mitad de partida).
+- El fondo lejano (agua, relieve del fondo, cielo, rayos de luz y nieve marina) se pinta a menos resolución y se escala.
 - En pausa y en la pantalla de resultados el mar se pinta una sola vez.
-- Los cambios de resolución se aplican al empezar un fotograma, antes de pintarlo (antes, el fotograma de ese momento salía en blanco y la pantalla parpadeaba). La resolución no se mide en los 2 primeros segundos de cada partida y, si tuvo que bajar, tarda 20 s en volver a intentar ese nivel.
+
+## Rendimiento en el móvil
+
+- **Resolución fija**: ya no hay resolución automática; el lienzo tiene siempre la resolución de su calidad. Los cambios de tamaño de la ventana se aplican al empezar un fotograma, antes de pintarlo.
+- **Tope de 60 fps**: el juego mide el refresco de la pantalla y en pantallas de 120 Hz pinta uno de cada dos refrescos (en 144 Hz, 72 fps; en 90 Hz se deja a 90). Menos trabajo, menos calor y sin bajones al calentarse el móvil.
+- **Sprites sin tirones**: el horneado se hace por pasos y se reparte entre fotogramas con un presupuesto de tiempo (2,5 ms por fotograma; 6 ms durante el primer segundo de cada partida). Los peces que van a entrar en pantalla se piden por adelantado; mientras tanto se usa el mismo pez a otra resolución o con la boca cerrada.
+- **Peces con menos órdenes de dibujo**: cada pez se coloca con una sola orden (la matriz se calcula a mano), los ojos son imágenes pequeñas ya preparadas (por tamaño, expresión, mirada y parpadeo) y los peces pequeños usan menos tiras. Con el banco de sardinas, las órdenes de dibujo por fotograma bajaron de ~3.300 a ~1.200.
+- **Marcador en caché**: fondo y marco de las barras, botones de pausa, morder y habilidad, y el marco del minimapa son imágenes; solo se pinta lo que cambia.
+- **Memoria**: temporizadores de los peces escritos uno a uno, listas que se compactan sobre sí mismas en vez de rehacerse, partículas recicladas y peces que nacen con todas sus propiedades en el mismo orden.
 - Sin `ctx.filter` durante la partida (en el móvil es lentísimo): el destello del buceador al recibir un mordisco es un brillo aditivo.
-- Todos los peces nacen con las mismas propiedades y en el mismo orden, y los bucles de las listas del juego usan índices: el motor de JavaScript no desoptimiza el código a cada rato y se genera mucha menos basura de memoria (de ~200 a ~70 KB por fotograma).
-- Nieve marina, partículas, burbujas y krill se pintan con pequeñas imágenes ya hechas; los textos con contorno del marcador se guardan como imagen; el primer plano desenfocado se prepara al empezar la partida.
 
 ## Botones y mapa
 
