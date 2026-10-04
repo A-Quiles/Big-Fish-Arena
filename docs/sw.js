@@ -1,5 +1,5 @@
 // Big Fish Arena: permite jugar sin conexión y recibir las versiones nuevas
-const CACHE = 'big-fish-arena-a29fe14e5f';
+const CACHE = 'big-fish-arena-20262d1910';
 const CORE = ["./", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "fonts/fonts.css", "fonts/fredoka-latin-500-normal.woff2", "fonts/fredoka-latin-600-normal.woff2", "fonts/fredoka-latin-700-normal.woff2", "fonts/fredoka-latin-ext-500-normal.woff2", "fonts/fredoka-latin-ext-600-normal.woff2", "fonts/fredoka-latin-ext-700-normal.woff2", "fonts/nunito-cyrillic-700-normal.woff2", "fonts/nunito-cyrillic-800-normal.woff2", "fonts/nunito-cyrillic-900-normal.woff2", "fonts/nunito-cyrillic-ext-700-normal.woff2", "fonts/nunito-cyrillic-ext-800-normal.woff2", "fonts/nunito-cyrillic-ext-900-normal.woff2", "fonts/nunito-latin-700-normal.woff2", "fonts/nunito-latin-800-normal.woff2", "fonts/nunito-latin-900-normal.woff2", "fonts/nunito-latin-ext-700-normal.woff2", "fonts/nunito-latin-ext-800-normal.woff2", "fonts/nunito-latin-ext-900-normal.woff2"];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));
