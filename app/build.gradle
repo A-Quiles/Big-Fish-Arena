@@ -36,6 +36,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            // depuración: anuncios de prueba de Google (el ID de app de prueba también, para no mezclar)
+            manifestPlaceholders = [
+                admobAppId          : 'ca-app-pub-3940256099942544~3347511713',
+                admobInterstitialId : 'ca-app-pub-3940256099942544/1033173712',
+                admobRewardedId     : 'ca-app-pub-3940256099942544/5224354917',
+            ]
+        }
         release {
             minifyEnabled = false
             if (keystoreFile) signingConfig = signingConfigs.release

@@ -104,7 +104,7 @@ Cada zona tiene su propia música de fondo, generada en el propio juego con Web 
 - **Perlas dobles** al final de cada partida viendo un anuncio con recompensa (voluntario, una vez por partida; duplica las perlas de puntos, cofres y cuevas, no las de misiones). Si lo ves, esa vez no sale el intersticial.
 - **Cofre dorado gratis** viendo un anuncio con recompensa (voluntario), uno al día.
 - **Diamante gratis** viendo un anuncio con recompensa: 1 💎 por anuncio, hasta 5 al día (Tienda → Diamantes).
-- Los IDs de AdMob están en `gradle.properties`. Ahora son los **IDs de prueba** de Google: cámbialos por los tuyos antes de publicar.
+- Los IDs de AdMob están en `gradle.properties`: ya son los **reales** (app `ca-app-pub-2789508041955037~6326245867`, intersticial `…/3535507556`, recompensa `…/2766274803`). La versión de publicación los usa; la de depuración usa siempre los de prueba de Google. Un mismo bloque de recompensa sirve para los tres anuncios con premio (perlas dobles, cofre dorado y diamantes).
 - El consentimiento (RGPD) lo gestiona el SDK de Google (UMP) con el mensaje que configures en AdMob → Privacidad y mensajes.
 - En el navegador no hay anuncios.
 
