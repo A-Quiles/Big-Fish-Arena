@@ -22,6 +22,9 @@
         <meta-data
             android:name="pez.REWARDED_ID"
             android:value="${admobRewardedId}" />
+        <meta-data
+            android:name="pez.REWARDED_PEARLS_ID"
+            android:value="${admobRewardedPearlsId}" />
 
         <activity
             android:name=".MainActivity"

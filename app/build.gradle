@@ -18,9 +18,10 @@ android {
         versionCode = Integer.parseInt(runNumber)
         versionName = "${project.property('APP_VERSION_NAME')}.${runNumber}"
         manifestPlaceholders = [
-            admobAppId          : project.property('ADMOB_APP_ID'),
-            admobInterstitialId : project.property('ADMOB_INTERSTITIAL_ID'),
-            admobRewardedId     : project.property('ADMOB_REWARDED_ID'),
+            admobAppId            : project.property('ADMOB_APP_ID'),
+            admobInterstitialId   : project.property('ADMOB_INTERSTITIAL_ID'),
+            admobRewardedId       : project.property('ADMOB_REWARDED_ID'),
+            admobRewardedPearlsId : project.property('ADMOB_REWARDED_PEARLS_ID'),
         ]
     }
 
@@ -39,9 +40,10 @@ android {
         debug {
             // depuración: anuncios de prueba de Google (el ID de app de prueba también, para no mezclar)
             manifestPlaceholders = [
-                admobAppId          : 'ca-app-pub-3940256099942544~3347511713',
-                admobInterstitialId : 'ca-app-pub-3940256099942544/1033173712',
-                admobRewardedId     : 'ca-app-pub-3940256099942544/5224354917',
+                admobAppId            : 'ca-app-pub-3940256099942544~3347511713',
+                admobInterstitialId   : 'ca-app-pub-3940256099942544/1033173712',
+                admobRewardedId       : 'ca-app-pub-3940256099942544/5224354917',
+                admobRewardedPearlsId : 'ca-app-pub-3940256099942544/5224354917',
             ]
         }
         release {

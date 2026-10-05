@@ -64,6 +64,10 @@ public class MainActivity extends ComponentActivity {
     private RewardedAd rewarded;
     private boolean rewardedLoading;
     private boolean rewardedWanted;             // el jugador lo ha pedido y aún se estaba cargando
+    private String rewardedPearlsId;
+    private RewardedAd rewardedPearls;
+    private boolean rewardedPearlsLoading;
+    private boolean rewardedPearlsWanted;
     private final AtomicBoolean adsStarted = new AtomicBoolean(false);
 
     @Override
@@ -71,6 +75,7 @@ public class MainActivity extends ComponentActivity {
         super.onCreate(savedInstanceState);
         interstitialId = readMeta("pez.INTERSTITIAL_ID");
         rewardedId = readMeta("pez.REWARDED_ID");
+        rewardedPearlsId = readMeta("pez.REWARDED_PEARLS_ID");
 
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(SEA);
@@ -180,6 +185,7 @@ public class MainActivity extends ComponentActivity {
             runOnUiThread(() -> {
                 loadAd();
                 loadRewarded();
+                loadRewardedPearls();
             });
         }).start();
     }
@@ -227,7 +233,7 @@ public class MainActivity extends ComponentActivity {
         interstitial.show(this);
     }
 
-    // ---------- Anuncio con recompensa (cofre gratis) ----------
+    // ---------- Anuncio con recompensa (cofre gratis / diamante) ----------
     private void loadRewarded() {
         if (!adsStarted.get() || rewardedLoading || rewarded != null || rewardedId == null) return;
         rewardedLoading = true;
@@ -289,6 +295,68 @@ public class MainActivity extends ComponentActivity {
         js("window.__pezRewardDone && window.__pezRewardDone('" + status + "')");
     }
 
+    // ---------- Anuncio con recompensa (perlas dobles al final de partida) ----------
+    private void loadRewardedPearls() {
+        if (!adsStarted.get() || rewardedPearlsLoading || rewardedPearls != null || rewardedPearlsId == null) return;
+        rewardedPearlsLoading = true;
+        RewardedAd.load(this, rewardedPearlsId, new AdRequest.Builder().build(), new RewardedAdLoadCallback() {
+            @Override
+            public void onAdLoaded(@NonNull RewardedAd ad) {
+                rewardedPearls = ad;
+                rewardedPearlsLoading = false;
+                if (rewardedPearlsWanted) {
+                    rewardedPearlsWanted = false;
+                    showRewardedPearlsAd();
+                }
+            }
+
+            @Override
+            public void onAdFailedToLoad(@NonNull LoadAdError error) {
+                rewardedPearls = null;
+                rewardedPearlsLoading = false;
+                Log.w(TAG, "Anuncio perlas dobles no cargado: " + error.getMessage());
+                if (rewardedPearlsWanted) {
+                    rewardedPearlsWanted = false;
+                    rewardPearlsFinished("noad");
+                }
+            }
+        });
+    }
+
+    private void showRewardedPearlsAd() {
+        if (rewardedPearls == null) {
+            if (!adsStarted.get() || rewardedPearlsId == null) {
+                rewardPearlsFinished("noad");
+                return;
+            }
+            rewardedPearlsWanted = true;
+            loadRewardedPearls();
+            return;
+        }
+        final boolean[] earned = {false};
+        rewardedPearls.setFullScreenContentCallback(new FullScreenContentCallback() {
+            @Override
+            public void onAdDismissedFullScreenContent() {
+                rewardedPearls = null;
+                rewardPearlsFinished(earned[0] ? "earned" : "closed");
+                loadRewardedPearls();
+            }
+
+            @Override
+            public void onAdFailedToShowFullScreenContent(@NonNull AdError error) {
+                rewardedPearls = null;
+                rewardPearlsFinished("noad");
+                loadRewardedPearls();
+            }
+        });
+        rewardedPearls.show(this, rewardItem -> earned[0] = true);
+    }
+
+    private void rewardPearlsFinished(String status) {
+        hideSystemBars();
+        js("window.__pezRewardDone && window.__pezRewardDone('" + status + "')");
+    }
+
     private void adFinished() {
         hideSystemBars();
         js("window.__pezAdDone && window.__pezAdDone()");
@@ -304,6 +372,11 @@ public class MainActivity extends ComponentActivity {
         @JavascriptInterface
         public void showRewarded() {
             runOnUiThread(MainActivity.this::showRewardedAd);
+        }
+
+        @JavascriptInterface
+        public void showRewardedPearls() {
+            runOnUiThread(MainActivity.this::showRewardedPearlsAd);
         }
 
         @JavascriptInterface
