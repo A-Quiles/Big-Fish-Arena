@@ -1,0 +1,4 @@
+{
+  "minVersionCode": 0,
+  "_ayuda": "La app se bloquea (con un botón a Google Play) si su versionCode es menor que minVersionCode. Normalmente no hace falta tocarlo: la app ya detecta sola las versiones nuevas de Google Play. Úsalo solo para obligar al instante a actualizar, y pon como mucho el versionCode que YA esté publicado en Google Play (si pones uno mayor, nadie podrá jugar)."
+}

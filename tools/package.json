@@ -1,0 +1,8 @@
+{
+  "name": "big-fish-arena-tools",
+  "private": true,
+  "description": "Herramientas para preparar el juego: ofuscación del JavaScript (tools/obfuscate.js)",
+  "dependencies": {
+    "javascript-obfuscator": "5.9.0"
+  }
+}

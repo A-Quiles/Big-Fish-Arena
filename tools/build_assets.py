@@ -5,9 +5,13 @@ Genera:
   - app/src/main/assets/www/  -> el juego dentro de la app Android
   - docs/                     -> versión web jugable + política de privacidad (GitHub Pages)
 
+El JavaScript del juego sale ofuscado (tools/obfuscate.js, necesita Node: `npm ci --prefix tools` la primera vez)
+y sin las herramientas de prueba (window.__pez). Las traducciones van aparte, como datos JSON.
+
 Uso: python3 tools/build_assets.py
+     BFA_DEBUG=1 python3 tools/build_assets.py   -> sin ofuscar y con window.__pez (para pruebas)
 """
-import hashlib, json, os, re, shutil
+import hashlib, json, os, re, shutil, subprocess, tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'game', 'big-fish-arena.html')
@@ -28,6 +32,36 @@ src = src.replace(gf.group(0), '<style>\n' + fonts_css + '\n</style>\n')
 cut = re.search(r'</style>\n\n?<canvas', src)
 assert cut, 'No encuentro el inicio del <body> del juego'
 head, body = src[:cut.start() + len('</style>\n')], src[cut.start() + len('</style>\n'):]
+
+# ---------- JavaScript de publicación ----------
+DEBUG = os.environ.get('BFA_DEBUG') == '1'
+
+
+def obfuscate(js):
+    tool = os.path.join(ROOT, 'tools', 'obfuscate.js')
+    if not os.path.isdir(os.path.join(ROOT, 'tools', 'node_modules', 'javascript-obfuscator')):
+        raise SystemExit('Falta el ofuscador. Instálalo una vez con:  npm ci --prefix tools   (o usa BFA_DEBUG=1 para probar sin ofuscar)')
+    with tempfile.TemporaryDirectory() as tmp:
+        a, b = os.path.join(tmp, 'in.js'), os.path.join(tmp, 'out.js')
+        open(a, 'w', encoding='utf8').write(js)
+        subprocess.run(['node', tool, a, b], check=True)
+        return open(b, encoding='utf8').read()
+
+
+sm = re.search(r'<script>\n(.*?)\n</script>', body, re.S)
+assert sm and body.count('<script>') == 1, 'El juego debería tener un único <script>'
+js = sm.group(1)
+# Traducciones: fuera del código, como datos JSON (más rápido de cargar y no hace falta ofuscarlas)
+tm = re.search(r'^const I18N = (\{.*\});$', js, re.M)
+assert tm, 'No encuentro las traducciones (const I18N = {...};)'
+js = js.replace(tm.group(0), "const I18N = JSON.parse(document.getElementById('i18n').textContent);")
+i18n_block = '<script type="application/json" id="i18n">' + tm.group(1).replace('<', '\\u003c') + '</script>\n'
+if not DEBUG:
+    pm = re.search(r'^window\.__pez = \{.*\};$', js, re.M)
+    assert pm, 'No encuentro window.__pez (herramientas de prueba)'
+    js = js.replace(pm.group(0), '')
+    js = obfuscate(js)
+body = body[:sm.start()] + i18n_block + '<script>\n' + js + '\n</script>' + body[sm.end():]
 
 
 def page(extra_head='', extra_body=''):

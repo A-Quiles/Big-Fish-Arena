@@ -2,18 +2,18 @@
 
 Juego de peces para móvil: come, crece y que no te coman.
 
-- **Jugar en el navegador:** https://a-quiles.github.io/BigFishArena/
-- **Política de privacidad:** https://a-quiles.github.io/BigFishArena/privacidad.html
+- **Jugar en el navegador:** https://big-fish-arena.vercel.app/
+- **Política de privacidad:** https://big-fish-arena.vercel.app/privacidad.html
 
 ## Cómo está hecho
 
 | Carpeta | Qué hay |
 |---|---|
 | `game/big-fish-arena.html` | **El juego entero** (HTML + CSS + JS en un solo archivo). Es lo único que hay que tocar para cambiar el juego. |
-| `app/` | App Android (Java): muestra el juego en un WebView, pone los anuncios de AdMob y pide el consentimiento RGPD. |
-| `docs/` | Versión web jugable y política de privacidad. Si este repositorio es privado, la política se publica desde el repositorio público `a-quiles.github.io` (carpeta `BigFishArena/`), junto con `app-ads.txt`. |
+| `app/` | App Android (Java): muestra el juego en un WebView, bloquea las versiones antiguas, envía los fallos a Crashlytics y, si se activan, pone los anuncios de AdMob. |
+| `docs/` | Lo que publica Vercel en https://big-fish-arena.vercel.app: versión web jugable, política de privacidad, `app-ads.txt` y `version.json` (bloqueo de versiones). |
 | `store/` | Icono, gráfico destacado, capturas y textos para la ficha de Google Play. |
-| `tools/build_assets.py` | Copia el juego a `app/` y `docs/`. |
+| `tools/build_assets.py` | Copia el juego a `app/` y `docs/`, ya **ofuscado** (con `tools/obfuscate.js`). |
 | `.github/workflows/android.yml` | Compila la app en la nube en cada cambio. |
 
 ## Idiomas
@@ -98,13 +98,19 @@ Las perlas de la partida se guardan en un cofre con una animación: una fila por
 
 Cada zona tiene su propia música de fondo, generada en el propio juego con Web Audio (sin archivos ni derechos de autor). Se activa o desactiva en Ajustes.
 
-## Anuncios
+## Anuncios (ahora DESACTIVADOS)
+
+El juego se publica **sin anuncios**: `ADS_ENABLED=false` en `gradle.properties`. Así la app no lleva ni el SDK de AdMob
+ni el permiso del identificador de publicidad, y el juego esconde todo lo relacionado con anuncios (perlas dobles,
+cofre gratis, diamante gratis, «Privacidad y anuncios»). Para volver a activarlos basta con poner `ADS_ENABLED=true`:
+vuelve todo tal y como se describe aquí debajo. En Google Play Console habrá que cambiar «Contiene anuncios» a Sí,
+actualizar la sección de seguridad de los datos (AdMob) y la política de privacidad, y crear el mensaje RGPD en AdMob.
 
 - Un anuncio intersticial **cada 5 partidas**, al salir de la pantalla de resultados. Nunca durante la partida.
 - **Perlas dobles** al final de cada partida viendo un anuncio con recompensa (voluntario, una vez por partida; duplica las perlas de puntos, cofres y cuevas, no las de misiones). Si lo ves, esa vez no sale el intersticial.
 - **Cofre dorado gratis** viendo un anuncio con recompensa (voluntario), uno al día.
 - **Diamante gratis** viendo un anuncio con recompensa: 1 💎 por anuncio, hasta 5 al día (Tienda → Diamantes).
-- Los IDs de AdMob están en `gradle.properties`: ya son los **reales** (app `ca-app-pub-2789508041955037~6326245867`, intersticial `…/3535507556`, recompensa `…/2766274803`). La versión de publicación los usa; la de depuración usa siempre los de prueba de Google. Un mismo bloque de recompensa sirve para los tres anuncios con premio (perlas dobles, cofre dorado y diamantes).
+- Los IDs de AdMob están en `gradle.properties`: ya son los **reales** (app `ca-app-pub-2789508041955037~6326245867`, intersticial `…/3535507556`, recompensa `…/2766274803`). La versión de publicación los usa; la de depuración usa siempre los de prueba de Google. El cofre dorado y los diamantes usan el bloque de recompensa `…/2766274803`; las perlas dobles, el suyo propio (`…/2270441620`).
 - El consentimiento (RGPD) lo gestiona el SDK de Google (UMP) con el mensaje que configures en AdMob → Privacidad y mensajes.
 - En el navegador no hay anuncios.
 
@@ -129,13 +135,39 @@ Cada zona tiene su propia música de fondo, generada en el propio juego con Web 
 - `const PAID_GEMS = false;` en `game/big-fish-arena.html`: no se venden diamantes; solo se ganan jugando y con anuncios.
 - La versión con pagos de Google Play (packs de 0,99 € a 19,99 € y el código de facturación en `MainActivity.java`) está en el historial de git, en el commit «Economía real: diamantes con Google Play Billing…». Para recuperarla: `PAID_GEMS = true`, volver a poner ese `MainActivity.java` y la dependencia `com.android.billingclient:billing:8.0.0`, y crear los productos `diamantes_50`, `diamantes_280`, `diamantes_600` y `diamantes_1300` en Play Console.
 
+## Bloqueo de versiones
+
+Si existe una versión más nueva, la app tapa el juego con una ventana que no se puede cerrar y un botón que lleva a la
+ficha de Google Play. Se entera sola por Google Play (In-App Updates), en cuanto Play ofrece la versión nueva a ese móvil.
+Para obligar al instante, en `docs/version.json` se puede subir `minVersionCode` (nunca por encima del `versionCode` que
+ya esté publicado en Google Play, o nadie podría jugar). Sin conexión, recuerda lo último que supo.
+
+## Informes de fallos (Firebase Crashlytics)
+
+Los cierres de la app, los errores del juego (JavaScript) y las caídas del WebView llegan a la consola de Firebase →
+Crashlytics. Hace falta el secreto `GOOGLE_SERVICES_JSON` en GitHub (el contenido del `google-services.json` que da
+Firebase). Sin él la app se compila igual, pero sin informes. El archivo no se sube al repositorio (`.gitignore`).
+
+## Ofuscación
+
+- **Java:** R8 en la versión de publicación (`app/proguard-rules.pro`): nombres sin sentido, todo en un paquete y sin
+  mensajes de registro. El plugin de Crashlytics sube el `mapping.txt` para que los fallos se lean bien.
+- **Juego (JavaScript):** `tools/obfuscate.js` (javascript-obfuscator): nombres sin sentido, lógica revuelta, números
+  y textos camuflados, autodefensa y **bloqueo de dominio** (copiado en otra web, redirige a la oficial). Las opciones
+  más pesadas (tabla de textos, código basura) se descartaron porque, medido, hacían el juego hasta 2 veces más lento.
+- Para probar sin ofuscar: `BFA_DEBUG=1 python3 tools/build_assets.py` (deja también `window.__pez` para las pruebas).
+  **No subas** a `main` una compilación hecha con `BFA_DEBUG=1`: GitHub Actions vuelve a generar la de la app, pero `docs/` va tal cual a Vercel.
+
 ## Compilar
 
 Cada `push` a `main` compila en GitHub Actions y deja en **Actions → la última ejecución → Artifacts**:
 - `app-release.aab` → para subir a Google Play
 - `app-release.apk` → para instalar a mano en tu móvil y probar
 
-La firma usa estos secretos del repositorio (Settings → Secrets and variables → Actions):
-`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
+- `mapping.txt` → para traducir los nombres ofuscados de un fallo (Crashlytics ya lo hace solo)
 
-En local (con Android Studio o Gradle 9.4 y JDK 21): `python3 tools/build_assets.py` y luego `gradle :app:assembleRelease`.
+Secretos del repositorio (Settings → Secrets and variables → Actions):
+`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` (firma) y `GOOGLE_SERVICES_JSON` (Crashlytics).
+
+En local (con Android Studio o Gradle 9.4, JDK 21 y Node 22): `npm ci --prefix tools` (una vez),
+`python3 tools/build_assets.py` y luego `gradle :app:assembleRelease`.

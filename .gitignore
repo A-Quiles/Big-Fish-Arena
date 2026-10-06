@@ -6,3 +6,6 @@ local.properties
 .idea/
 *.iml
 .DS_Store
+node_modules/
+# Firebase: la configuración va en el secreto GOOGLE_SERVICES_JSON de GitHub (el repositorio es público)
+app/google-services.json

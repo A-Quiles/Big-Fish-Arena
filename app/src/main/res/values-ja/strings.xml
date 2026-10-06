@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_title">新しいバージョンがあります！</string>
+    <string name="update_body">Big Fish Arenaを続けて遊ぶには、ゲームを最新バージョンにアップデートしてください。</string>
+    <string name="update_button">Google Playでアップデート</string>
+</resources>

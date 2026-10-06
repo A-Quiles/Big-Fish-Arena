@@ -19,8 +19,27 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v5
 
-      - name: Preparar el juego
-        run: python3 tools/build_assets.py
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tools/package-lock.json
+
+      - name: Preparar el juego (JavaScript ofuscado)
+        run: |
+          npm ci --prefix tools --no-audit --no-fund
+          python3 tools/build_assets.py
+
+      - name: Firebase Crashlytics
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+            python3 -c "import json; json.load(open('app/google-services.json'))" || { echo "::error::El secreto GOOGLE_SERVICES_JSON no es un JSON válido"; exit 1; }
+          else
+            echo "::warning::Falta el secreto GOOGLE_SERVICES_JSON: la app saldrá sin Crashlytics (sin informes de fallos)"
+          fi
 
       - name: Clave de firma
         env:
@@ -40,9 +59,30 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew --no-daemon :app:bundleRelease :app:assembleRelease
 
+      - name: Comprobar la app (anuncios, permisos y ofuscación)
+        run: |
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          AAPT2=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/aapt2
+          PERMS=$("$AAPT2" dump permissions "$APK" | grep -o "name='[^']*'" | tr '\n' ' ')
+          echo "::notice title=Permisos::$PERMS"
+          ADS=$(grep -E '^ADS_ENABLED=' gradle.properties | cut -d= -f2 | tr -d ' \r')
+          if [ "$ADS" != "true" ]; then
+            if echo "$PERMS" | grep -q "AD_ID"; then echo "::error::Anuncios desactivados pero la app pide el permiso AD_ID"; exit 1; fi
+            if unzip -l "$APK" | grep -qi "play-services-ads"; then echo "::error::Anuncios desactivados pero la app lleva el SDK de AdMob"; exit 1; fi
+          fi
+          unzip -p "$APK" assets/www/index.html > /tmp/juego.html
+          if grep -q "window.__pez = {" /tmp/juego.html; then echo "::error::El juego no está ofuscado"; exit 1; fi
+          echo "::notice title=Comprobación::Anuncios: ${ADS:-false}. Juego ofuscado: $(wc -c < /tmp/juego.html) bytes. versionCode: ${{ github.run_number }}"
+
+      # Para que el día que se vuelvan a activar los anuncios no haya sorpresas: la versión con AdMob tiene que seguir compilando
+      - name: Comprobar que la versión con anuncios sigue compilando
+        if: ${{ !cancelled() }}
+        run: ./gradlew --no-daemon :app:compileDebugJavaWithJavac -PADS_ENABLED=true
+
       - uses: actions/upload-artifact@v6
         with:
           name: big-fish-arena-${{ github.run_number }}
           path: |
             app/build/outputs/bundle/release/*.aab
             app/build/outputs/apk/release/*.apk
+            app/build/outputs/mapping/release/mapping.txt

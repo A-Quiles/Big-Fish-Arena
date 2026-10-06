@@ -7,6 +7,18 @@ plugins {
 def runNumber = System.getenv('GITHUB_RUN_NUMBER') ?: project.property('APP_VERSION_CODE')
 def keystoreFile = System.getenv('KEYSTORE_FILE')
 
+// Anuncios: ADS_ENABLED en gradle.properties. Con false la app no lleva ni el SDK de AdMob (ni el permiso AD_ID).
+def adsEnabled = (project.findProperty('ADS_ENABLED') ?: 'false').toString().trim().toBoolean()
+
+// Firebase Crashlytics: hace falta app/google-services.json (en GitHub Actions sale del secreto GOOGLE_SERVICES_JSON).
+// Sin él la app se compila igual, pero sin informes de fallos.
+def hasFirebase = file('google-services.json').exists()
+if (hasFirebase) {
+    apply plugin: 'com.google.gms.google-services'
+    apply plugin: 'com.google.firebase.crashlytics'
+}
+println "Big Fish Arena: anuncios ${adsEnabled ? 'ACTIVADOS' : 'desactivados'}, Crashlytics ${hasFirebase ? 'activado' : 'sin google-services.json'}"
+
 android {
     namespace = 'com.aquiles.bigfisharena'
     compileSdk = 36
@@ -17,12 +29,19 @@ android {
         targetSdk = 36
         versionCode = Integer.parseInt(runNumber)
         versionName = "${project.property('APP_VERSION_NAME')}.${runNumber}"
-        manifestPlaceholders = [
+        manifestPlaceholders = adsEnabled ? [
             admobAppId            : project.property('ADMOB_APP_ID'),
             admobInterstitialId   : project.property('ADMOB_INTERSTITIAL_ID'),
             admobRewardedId       : project.property('ADMOB_REWARDED_ID'),
             admobRewardedPearlsId : project.property('ADMOB_REWARDED_PEARLS_ID'),
-        ]
+        ] : [admobAppId: '', admobInterstitialId: '', admobRewardedId: '', admobRewardedPearlsId: '']
+    }
+
+    // La parte de anuncios que se compila: src/ads (AdMob) o src/noads (vacía)
+    sourceSets {
+        main {
+            java.srcDir(adsEnabled ? 'src/ads/java' : 'src/noads/java')
+        }
     }
 
     signingConfigs {
@@ -39,15 +58,21 @@ android {
     buildTypes {
         debug {
             // depuración: anuncios de prueba de Google (el ID de app de prueba también, para no mezclar)
-            manifestPlaceholders = [
-                admobAppId            : 'ca-app-pub-3940256099942544~3347511713',
-                admobInterstitialId   : 'ca-app-pub-3940256099942544/1033173712',
-                admobRewardedId       : 'ca-app-pub-3940256099942544/5224354917',
-                admobRewardedPearlsId : 'ca-app-pub-3940256099942544/5224354917',
-            ]
+            if (adsEnabled) {
+                manifestPlaceholders = [
+                    admobAppId            : 'ca-app-pub-3940256099942544~3347511713',
+                    admobInterstitialId   : 'ca-app-pub-3940256099942544/1033173712',
+                    admobRewardedId       : 'ca-app-pub-3940256099942544/5224354917',
+                    admobRewardedPearlsId : 'ca-app-pub-3940256099942544/5224354917',
+                ]
+            }
         }
         release {
-            minifyEnabled = false
+            // Ofuscación y limpieza del código Java con R8 (reglas en proguard-rules.pro).
+            // El juego (JavaScript) se ofusca aparte, en tools/build_assets.py.
+            minifyEnabled = true
+            shrinkResources = true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             if (keystoreFile) signingConfig = signingConfigs.release
         }
     }
@@ -59,8 +84,13 @@ android {
 }
 
 dependencies {
-    implementation 'com.google.android.gms:play-services-ads:25.5.0'
-    implementation 'com.google.android.ump:user-messaging-platform:4.0.0'
+    if (adsEnabled) {
+        implementation 'com.google.android.gms:play-services-ads:25.5.0'
+        implementation 'com.google.android.ump:user-messaging-platform:4.0.0'
+    }
+    implementation platform('com.google.firebase:firebase-bom:34.19.0')
+    implementation 'com.google.firebase:firebase-crashlytics'
+    implementation 'com.google.android.play:app-update:2.1.0'
     implementation 'androidx.webkit:webkit:1.12.1'
     implementation 'androidx.activity:activity:1.9.3'
     implementation 'androidx.core:core:1.13.1'

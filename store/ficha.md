@@ -48,9 +48,11 @@ Juegos → Arcade
 Arcade, Casual, Un jugador, Animales, Sin conexión
 
 ## Contenido
-- Anuncios: SÍ (un anuncio intersticial cada 5 partidas, con AdMob)
-- Compras dentro de la app: NO. Los diamantes se consiguen jugando y viendo anuncios con recompensa (voluntarios).
-- Anuncios con recompensa: SÍ (1 diamante por anuncio, hasta 5 al día, y un cofre dorado gratis al día)
+- Anuncios: NO (desactivados por ahora; ADS_ENABLED=false en gradle.properties)
+- Compras dentro de la app: NO. Los diamantes se consiguen jugando.
+- Seguridad de los datos (solo Firebase Crashlytics): se recogen Registros de fallos, Diagnóstico, ID de dispositivo u otros
+  (ID de instalación) e Interacciones con la app (sesiones). Finalidad: Funciones de la app y Analíticas. No se comparten.
+  Cifrados en tránsito. Recogida obligatoria (no se puede desactivar).
 - Público objetivo: 13 años o más
 
 ## Material gráfico (en esta carpeta)

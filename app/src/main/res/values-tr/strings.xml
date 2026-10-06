@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_title">Yeni bir sürüm var!</string>
+    <string name="update_body">Big Fish Arena oynamaya devam etmek için oyunu en son sürüme güncelle.</string>
+    <string name="update_button">Google Play\'de güncelle</string>
+</resources>
