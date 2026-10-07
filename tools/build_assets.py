@@ -3,7 +3,7 @@
 
 Genera:
   - app/src/main/assets/www/  -> el juego dentro de la app Android
-  - docs/                     -> versión web jugable + política de privacidad (GitHub Pages)
+  - docs/jugar/               -> versión web jugable (la portada docs/index.html es la página de promoción)
 
 El JavaScript del juego sale ofuscado (tools/obfuscate.js, necesita Node: `npm ci --prefix tools` la primera vez)
 y sin las herramientas de prueba (window.__pez). Las traducciones van aparte, como datos JSON.
@@ -83,29 +83,35 @@ os.makedirs(APP)
 open(os.path.join(APP, 'index.html'), 'w', encoding='utf8').write(page())
 copy_fonts(os.path.join(APP, 'fonts'))
 
-# ---------- Web (GitHub Pages) ----------
+# ---------- Web: el juego jugable en https://big-fish-arena.vercel.app/jugar/ ----------
+# La portada (docs/index.html + docs/assets/) es la página de promoción y no la toca este script.
+WEB = os.path.join(DOCS, 'jugar')
+if os.path.isdir(WEB):
+    shutil.rmtree(WEB)
+os.makedirs(WEB)
+copy_fonts(os.path.join(WEB, 'fonts'))
 web = page(
     '<link rel="manifest" href="manifest.webmanifest">\n'
-    '<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">\n'
-    '<link rel="apple-touch-icon" href="icons/icon-192.png">\n'
+    '<link rel="icon" type="image/png" sizes="192x192" href="../icons/icon-192.png">\n'
+    '<link rel="apple-touch-icon" href="../icons/icon-192.png">\n'
     '<meta name="mobile-web-app-capable" content="yes">\n',
     "<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>\n")
-open(os.path.join(DOCS, 'index.html'), 'w', encoding='utf8').write(web)
+open(os.path.join(WEB, 'index.html'), 'w', encoding='utf8').write(web)
 open(os.path.join(DOCS, '.nojekyll'), 'w').write('')
 json.dump({
     'id': './', 'name': 'Big Fish Arena', 'short_name': 'Big Fish Arena', 'description': DESC, 'lang': 'en',
     'start_url': './', 'scope': './', 'display': 'fullscreen', 'orientation': 'any',
     'background_color': '#06243a', 'theme_color': '#06243a', 'categories': ['games'],
     'icons': [
-        {'src': 'icons/icon-192.png', 'sizes': '192x192', 'type': 'image/png', 'purpose': 'any'},
-        {'src': 'icons/icon-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'},
-        {'src': 'icons/maskable-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'},
+        {'src': '../icons/icon-192.png', 'sizes': '192x192', 'type': 'image/png', 'purpose': 'any'},
+        {'src': '../icons/icon-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'},
+        {'src': '../icons/maskable-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'},
     ],
-}, open(os.path.join(DOCS, 'manifest.webmanifest'), 'w', encoding='utf8'), ensure_ascii=False, indent=2)
+}, open(os.path.join(WEB, 'manifest.webmanifest'), 'w', encoding='utf8'), ensure_ascii=False, indent=2)
 
-core = ['./', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png'] + ['fonts/' + f for f in sorted(os.listdir(FONTS))]
+core = ['./', 'manifest.webmanifest', '../icons/icon-192.png', '../icons/icon-512.png', '../icons/maskable-512.png'] + ['fonts/' + f for f in sorted(os.listdir(FONTS))]
 ver = hashlib.sha1(web.encode()).hexdigest()[:10]
-open(os.path.join(DOCS, 'sw.js'), 'w', encoding='utf8').write(f'''// Big Fish Arena: permite jugar sin conexión y recibir las versiones nuevas
+open(os.path.join(WEB, 'sw.js'), 'w', encoding='utf8').write(f'''// Big Fish Arena: permite jugar sin conexión y recibir las versiones nuevas
 const CACHE = 'big-fish-arena-{ver}';
 const CORE = {json.dumps(core)};
 self.addEventListener('install', (e) => {{
@@ -124,4 +130,19 @@ self.addEventListener('fetch', (e) => {{
   e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((r) => {{ if (r.ok) {{ const c = r.clone(); caches.open(CACHE).then((k) => k.put(req, c)); }} return r; }})));
 }});
 ''')
-print('Juego preparado: app/src/main/assets/www y docs/ (versión', ver + ')')
+
+# Antes el juego estaba en la portada: quien lo abrió tiene un service worker en «/» que seguiría enseñando el juego.
+# Este sw.js de la raíz se borra a sí mismo y recarga, para que vean la página de promoción.
+open(os.path.join(DOCS, 'sw.js'), 'w', encoding='utf8').write('''// Retirado: el juego se mueve a /jugar/. Este service worker se elimina solo y recarga la página.
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (e) => {
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.map((k) => caches.delete(k))))
+    .then(() => self.registration.unregister())
+    .then(() => self.clients.matchAll({ type: 'window' }))
+    .then((cs) => cs.forEach((c) => c.navigate(c.url))));
+});
+''')
+old_manifest = os.path.join(DOCS, 'manifest.webmanifest')
+if os.path.exists(old_manifest):
+    os.remove(old_manifest)
+print('Juego preparado: app/src/main/assets/www y docs/jugar/ (versión', ver + ')')

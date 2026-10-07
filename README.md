@@ -2,7 +2,8 @@
 
 Juego de peces para móvil: come, crece y que no te coman.
 
-- **Jugar en el navegador:** https://big-fish-arena.vercel.app/
+- **Web (promoción):** https://big-fish-arena.vercel.app/
+- **Jugar en el navegador:** https://big-fish-arena.vercel.app/jugar/
 - **Política de privacidad:** https://big-fish-arena.vercel.app/privacidad.html
 
 ## Cómo está hecho
@@ -11,7 +12,7 @@ Juego de peces para móvil: come, crece y que no te coman.
 |---|---|
 | `game/big-fish-arena.html` | **El juego entero** (HTML + CSS + JS en un solo archivo). Es lo único que hay que tocar para cambiar el juego. |
 | `app/` | App Android (Java): muestra el juego en un WebView, bloquea las versiones antiguas, envía los fallos a Crashlytics y, si se activan, pone los anuncios de AdMob. |
-| `docs/` | Lo que publica Vercel en https://big-fish-arena.vercel.app: versión web jugable, política de privacidad, `app-ads.txt` y `version.json` (bloqueo de versiones). |
+| `docs/` | Lo que publica Vercel (proyecto `big-fish-arena`, Root Directory `docs`) en https://big-fish-arena.vercel.app: página de promoción (`index.html` + `assets/`), juego jugable en `jugar/`, política de privacidad, `app-ads.txt` y `version.json` (bloqueo de versiones). El repositorio `Big-Fish-Arena-Web` ya no se usa. |
 | `store/` | Icono, gráfico destacado, capturas y textos para la ficha de Google Play. |
 | `tools/build_assets.py` | Copia el juego a `app/` y `docs/`, ya **ofuscado** (con `tools/obfuscate.js`). |
 | `.github/workflows/android.yml` | Compila la app en la nube en cada cambio. |
