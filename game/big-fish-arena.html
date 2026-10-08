@@ -2018,6 +2018,7 @@ function genWorld(seed) {
 genWorld(1);
 // Población por zona: constante, no crece con el tiempo
 const TARGET = [22, 21, 17, 19, 15, 12];
+const fishTarget = (z) => Math.round(TARGET[z] * (game && game.demo ? 1.8 : 1));   // el menú, con más vida
 const KCAP = [1, 1, 2, 1, 3, 3];       // peces que pueden tragarte a la vez
 const HCAP = [2, 2, 2, 2, 3, 3];       // peces que te persiguen a la vez
 const PBIG = [0.12, 0.15, 0.18, 0.12, 0.22, 0.25];
@@ -2796,7 +2797,7 @@ function spawnFish(initial) {
   const g = game, P = g.P, vr = viewRadius();
   const killers = killerCount(), cap = killerCap();
   const zP = zoneOf(P.x, P.y);
-  const crowd = 260 * g.cam.view / 330;
+  const crowd = 260 * g.cam.view / 330 * (g.demo ? 0.55 : 1);   // en el menú, más peces juntos
   const walkers = { cangrejo: 0, arana: 0 };
   for (let _i20 = 0, _a20 = g.fish, o; _i20 < _a20.length && ((o = _a20[_i20]), true); _i20++) if (!o.dead && walkers[o.sp] !== undefined) walkers[o.sp]++;
   for (let tries = 0; tries < 12; tries++) {
@@ -2808,6 +2809,7 @@ function spawnFish(initial) {
     const dist = rand(minD, vr * 1.6);
     const x = P.x + Math.cos(a) * dist;
     let y = P.y + Math.sin(a) * dist * 0.8;
+    if (g.demo) y = P.y + rand(-0.9, 0.45) * viewHalf().h;   // en el menú, a la altura de la pantalla
     if (y < 120) continue;
     const z = zoneOf(x, y);
     let r = clamp(P.r * q, 3, 280);
@@ -2918,15 +2920,37 @@ function placeGem() {
   if (!best) best = { x: 1000, y: floorY(1000) };
   return { x: best.x, y: best.y - 26, got: false };
 }
+// Fondo del menú: un trozo de arrecife llano, con la arena abajo y corales a los lados de la tarjeta.
+// Solo toca el mundo de la demo, que se tira al empezar a jugar.
+const DEMO_D = 1150, DEMO_SPAN = 700;
+const DEMO_DECO = [[-330, 'coral', 1.5], [-285, 'anemone', 1.3], [-245, 'coral', 1.1], [-205, 'grass', 1.2], [-160, 'rock', 0.7], [-90, 'grass', 0.9],
+  [30, 'grass', 0.8], [120, 'grass', 1], [175, 'coral', 0.9], [215, 'anemone', 1], [260, 'coral', 1.6], [310, 'grass', 1.2], [360, 'coral', 1.2]];
+const demoCamY = (cv) => DEMO_D - ((view.sw > view.sh ? 0.84 : 0.9) - 0.5) * cv * view.sh / Math.min(view.sw, view.sh);   // la arena, abajo del todo
+function demoStage(P) {
+  const cx = P.x, a = cx - DEMO_SPAN, b = cx + DEMO_SPAN, E = 400, fs = WORLD.fs, near = (x) => x > a - E && x < b + E;
+  for (let i = Math.max(0, Math.floor((a - E) / FS)); i <= Math.min(fs.length - 1, Math.ceil((b + E) / FS)); i++) {
+    const x = i * FS, w = Math.max(0, 1 - Math.max(a - x, x - b, 0) / E), s = w * w * (3 - 2 * w);
+    fs[i] += (DEMO_D + Math.sin(x / 140) * 10 - fs[i]) * s;
+  }
+  WORLD.caves = WORLD.caves.filter((c) => c.x1 < a - E || c.x0 > b + E);
+  WORLD.deco = WORLD.deco.filter((d) => d.x < a || d.x > b);
+  WORLD.haz = WORLD.haz.filter((z) => !near(z.x));
+  WORLD.pipes = WORLD.pipes.filter((p) => !near(p.x));
+  WORLD.ice = WORLD.ice.filter((c) => !near(c.x));
+  DEMO_DECO.forEach(([dx, k, s], i) => WORLD.deco.push({ x: cx + dx, k: MAPK === 'templado' || k === 'grass' ? k : decoPick(0, Math.random()), s, c: i % 4, h: Math.random() }));
+  P.y = demoCamY(viewFor(R0));
+}
+
 function newGame(sp, demo, boosts, gmode) {
   setMap(save.mapSel);
   const world = genWorld(1000 + Math.floor(Math.random() * 9000));
   const P = makeFish(sp, R0, rand(1500, Math.max(1600, world.segs[0].x1 - 1500)), 450, true);
   P.ang = 0; P.skin = skinOf(sp);
+  if (demo) demoStage(P);
   const g = {
     t: 0, P, fish: [], birds: [], krill: [], jelly: [], insects: [], parts: [], texts: [], rings: [], toasts: [], chests: demo ? [] : makeChests(), gem: null, gemsFound: 0,
     mode: !demo && gmode === 'school' ? 'school' : 'classic',
-    score: 0, eaten: 0, maxTalla: 1, over: false, overT: 0, shown: false, demo: !!demo, finished: false,
+    score: 0, eaten: 0, maxTalla: 1, over: false, overT: 0, shown: false, demo: !!demo, demoX: P.x, finished: false,
     cam: { x: P.x, y: P.y, view: viewFor(R0) }, spawnT: 0, zone: 0, banner: null, shake: 0,
     killer: null, cause: '', quit: false, combo: 0, comboT: 0, mCheckT: 0, mDone: [], tip: null,
     lurers: [], huntP: 0, zoneP: 0, tint: [0, 0, 0, 0, 0, 0], pearlMul: 1, revive: 0, chestPearls: 0, cavePearls: 0, doubled: false, boostsUsed: boosts || [],
@@ -2960,7 +2984,7 @@ function newGame(sp, demo, boosts, gmode) {
     if (DIAMONDS && Math.random() < 0.12) { g.gem = placeGem(); g.toasts.push({ txt: 'Dicen que en lo más hondo de este mar brilla algo…', col: '#ff9ff3', t: 0, dur: 4 }); }
   }
   const z = zoneOf(P.x, P.y);
-  for (let i = 0; i < TARGET[z]; i++) spawnFish(true);
+  for (let i = 0; i < fishTarget(z); i++) spawnFish(true);
   for (let i = 0; i < 4; i++) spawnKrill(true);
   if (MAPK === 'toxico' && !demo) for (let i = 0; i < 8; i++) spawnTrash(true);
   for (let i = 0; i < 2; i++) spawnJelly(true);
@@ -4634,8 +4658,8 @@ function manageSpawns() {
   g.krill = g.krill.filter((k) => d2(k.x, k.y, P.x, P.y) < far);
   g.jelly = g.jelly.filter((j) => d2(j.x, j.y, P.x, P.y) < far);
   const count = () => { let n = 0; for (let _i71 = 0, _a71 = g.fish, f; _i71 < _a71.length && ((f = _a71[_i71]), true); _i71++) if (!f.isP && !f.member && !f.home) n++; return n; };
-  const target = TARGET[zoneOf(P.x, P.y)];
-  for (let i = 0; i < 2 && count() < target; i++) spawnFish(false);
+  const target = fishTarget(zoneOf(P.x, P.y));
+  for (let i = 0; i < (g.demo ? 4 : 2) && count() < target; i++) spawnFish(false);
   if (P.r < 60 && g.krill.length < (g.mode === 'school' ? 45 : 30)) spawnKrill(false);
   if (g.jelly.length < 4) spawnJelly(false);
   caveResidents(g, P);
@@ -4707,9 +4731,11 @@ function update(dt) {
   }
   g.t += dt;
   if (g.shake > 0) g.shake -= dt;
-  if (g.demo) {
-    P.x += 32 * dt;
-    P.y = 700 + Math.sin(g.t * 0.15) * 250;
+  if (g.demo) {                                          // cámara casi quieta sobre la arena del menú
+    P.x = g.demoX + Math.sin(g.t * 0.1) * 30;
+    P.y = demoCamY(g.cam.view) + Math.sin(g.t * 0.4) * 4;
+    const H = viewHalf();                                 // el pez que sale por un lado vuelve a entrar por el otro: siempre hay vida en pantalla
+    for (let i = 0, F = g.fish; i < F.length; i++) { const f = F[i], dx = f.x - P.x; if (!f.dead && !f.home && Math.abs(dx) > H.w + 120 + f.r) { f.x = P.x - Math.sign(dx) * (H.w + 60 + f.r); if (!SP[f.sp].walk) f.y = clamp(f.y, P.y - H.h * 0.9, P.y + H.h * 0.45); } }
   } else if (g.mode === 'school') { if (!P.dead) updateSchool(dt); }
   else if (!P.dead) updatePlayer(P, dt);
   // Datos compartidos del frame
